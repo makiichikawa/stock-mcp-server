@@ -64,39 +64,42 @@ server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
                 },
             },
             {
-                name: 'get_index_contribution',
-                description: 'Get individual stock contribution to a market index (Nikkei 225, TOPIX, etc.)',
+                name: 'analyze_profitability_turnaround',
+                description: 'Analyze whether a stock has turned from loss to profit in recent quarters',
                 inputSchema: {
                     type: 'object',
                     properties: {
                         symbol: {
                             type: 'string',
-                            description: 'Stock symbol (e.g., 7203.T for Toyota)',
-                        },
-                        indexSymbol: {
-                            type: 'string',
-                            description: 'Index symbol (e.g., N225 for Nikkei 225, TOPX for TOPIX)',
+                            description: 'Stock symbol (e.g., AAPL, GOOGL, TSLA)',
                         },
                     },
-                    required: ['symbol', 'indexSymbol'],
+                    required: ['symbol'],
                 },
             },
             {
-                name: 'get_index_analysis',
-                description: 'Get comprehensive analysis of index contributors and detractors',
+                name: 'screen_profit_turnaround_stocks',
+                description: 'Screen multiple stocks to find those that have turned from loss to profit',
                 inputSchema: {
                     type: 'object',
                     properties: {
-                        indexSymbol: {
-                            type: 'string',
-                            description: 'Index symbol (e.g., N225 for Nikkei 225, TOPX for TOPIX)',
+                        symbols: {
+                            type: 'array',
+                            items: {
+                                type: 'string',
+                            },
+                            description: 'Array of stock symbols to screen (e.g., ["AAPL", "GOOGL", "TSLA"])',
                         },
-                        topN: {
+                        minMarketCap: {
                             type: 'number',
-                            description: 'Number of top contributors/detractors to show (default: 10)',
+                            description: 'Minimum market capitalization filter (optional)',
+                        },
+                        maxMarketCap: {
+                            type: 'number',
+                            description: 'Maximum market capitalization filter (optional)',
                         },
                     },
-                    required: ['indexSymbol'],
+                    required: ['symbols'],
                 },
             },
         ],
@@ -144,9 +147,9 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
                 ],
             };
         }
-        if (name === 'get_index_contribution') {
-            const validatedArgs = schema_1.IndexContributionSchema.parse(args);
-            const result = await stockService.getIndexContribution(validatedArgs);
+        if (name === 'analyze_profitability_turnaround') {
+            const validatedArgs = schema_1.StockSymbolSchema.parse(args);
+            const result = await stockService.analyzeProfitabilityTurnAround(validatedArgs);
             return {
                 content: [
                     {
@@ -156,12 +159,9 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
                 ],
             };
         }
-        if (name === 'get_index_analysis') {
-            const { indexSymbol, topN = 10 } = args;
-            if (!indexSymbol) {
-                throw new Error('indexSymbol is required');
-            }
-            const result = await stockService.getIndexAnalysis(indexSymbol, topN);
+        if (name === 'screen_profit_turnaround_stocks') {
+            const validatedArgs = schema_1.StockScreenerSchema.parse(args);
+            const result = await stockService.screenProfitTurnAroundStocks(validatedArgs);
             return {
                 content: [
                     {

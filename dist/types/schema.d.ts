@@ -140,238 +140,56 @@ export declare const FinancialDataResponseSchema: z.ZodObject<{
     payoutRatio?: number | undefined;
     beta?: number | undefined;
 }>;
-export declare const IndexContributionSchema: z.ZodObject<{
-    symbol: z.ZodString;
-    indexSymbol: z.ZodString;
-}, "strip", z.ZodTypeAny, {
-    symbol: string;
-    indexSymbol: string;
-}, {
-    symbol: string;
-    indexSymbol: string;
-}>;
-export declare const ContributionResponseSchema: z.ZodObject<{
+export declare const ProfitabilityTurnAroundSchema: z.ZodObject<{
     symbol: z.ZodString;
     companyName: z.ZodOptional<z.ZodString>;
-    indexSymbol: z.ZodString;
-    indexName: z.ZodOptional<z.ZodString>;
-    currentPrice: z.ZodNumber;
-    priceChange: z.ZodNumber;
-    priceChangePercent: z.ZodNumber;
-    indexWeight: z.ZodOptional<z.ZodNumber>;
-    contribution: z.ZodNumber;
-    contributionPercent: z.ZodNumber;
+    currentQuarterNetIncome: z.ZodOptional<z.ZodNumber>;
+    previousQuarterNetIncome: z.ZodOptional<z.ZodNumber>;
+    currentQuarterEarnings: z.ZodOptional<z.ZodNumber>;
+    previousQuarterEarnings: z.ZodOptional<z.ZodNumber>;
+    turnAroundStatus: z.ZodEnum<["profit_turnaround", "loss_turnaround", "continued_profit", "continued_loss"]>;
+    quarterlyChange: z.ZodOptional<z.ZodNumber>;
     marketCap: z.ZodOptional<z.ZodNumber>;
     timestamp: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     symbol: string;
     timestamp: string;
-    indexSymbol: string;
-    currentPrice: number;
-    priceChange: number;
-    priceChangePercent: number;
-    contribution: number;
-    contributionPercent: number;
+    turnAroundStatus: "profit_turnaround" | "loss_turnaround" | "continued_profit" | "continued_loss";
     marketCap?: number | undefined;
     companyName?: string | undefined;
-    indexName?: string | undefined;
-    indexWeight?: number | undefined;
+    currentQuarterNetIncome?: number | undefined;
+    previousQuarterNetIncome?: number | undefined;
+    currentQuarterEarnings?: number | undefined;
+    previousQuarterEarnings?: number | undefined;
+    quarterlyChange?: number | undefined;
 }, {
     symbol: string;
     timestamp: string;
-    indexSymbol: string;
-    currentPrice: number;
-    priceChange: number;
-    priceChangePercent: number;
-    contribution: number;
-    contributionPercent: number;
+    turnAroundStatus: "profit_turnaround" | "loss_turnaround" | "continued_profit" | "continued_loss";
     marketCap?: number | undefined;
     companyName?: string | undefined;
-    indexName?: string | undefined;
-    indexWeight?: number | undefined;
+    currentQuarterNetIncome?: number | undefined;
+    previousQuarterNetIncome?: number | undefined;
+    currentQuarterEarnings?: number | undefined;
+    previousQuarterEarnings?: number | undefined;
+    quarterlyChange?: number | undefined;
 }>;
-export declare const IndexAnalysisResponseSchema: z.ZodObject<{
-    indexSymbol: z.ZodString;
-    indexName: z.ZodOptional<z.ZodString>;
-    indexChange: z.ZodNumber;
-    indexChangePercent: z.ZodNumber;
-    topContributors: z.ZodArray<z.ZodObject<{
-        symbol: z.ZodString;
-        companyName: z.ZodOptional<z.ZodString>;
-        indexSymbol: z.ZodString;
-        indexName: z.ZodOptional<z.ZodString>;
-        currentPrice: z.ZodNumber;
-        priceChange: z.ZodNumber;
-        priceChangePercent: z.ZodNumber;
-        indexWeight: z.ZodOptional<z.ZodNumber>;
-        contribution: z.ZodNumber;
-        contributionPercent: z.ZodNumber;
-        marketCap: z.ZodOptional<z.ZodNumber>;
-        timestamp: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        symbol: string;
-        timestamp: string;
-        indexSymbol: string;
-        currentPrice: number;
-        priceChange: number;
-        priceChangePercent: number;
-        contribution: number;
-        contributionPercent: number;
-        marketCap?: number | undefined;
-        companyName?: string | undefined;
-        indexName?: string | undefined;
-        indexWeight?: number | undefined;
-    }, {
-        symbol: string;
-        timestamp: string;
-        indexSymbol: string;
-        currentPrice: number;
-        priceChange: number;
-        priceChangePercent: number;
-        contribution: number;
-        contributionPercent: number;
-        marketCap?: number | undefined;
-        companyName?: string | undefined;
-        indexName?: string | undefined;
-        indexWeight?: number | undefined;
-    }>, "many">;
-    bottomContributors: z.ZodArray<z.ZodObject<{
-        symbol: z.ZodString;
-        companyName: z.ZodOptional<z.ZodString>;
-        indexSymbol: z.ZodString;
-        indexName: z.ZodOptional<z.ZodString>;
-        currentPrice: z.ZodNumber;
-        priceChange: z.ZodNumber;
-        priceChangePercent: z.ZodNumber;
-        indexWeight: z.ZodOptional<z.ZodNumber>;
-        contribution: z.ZodNumber;
-        contributionPercent: z.ZodNumber;
-        marketCap: z.ZodOptional<z.ZodNumber>;
-        timestamp: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        symbol: string;
-        timestamp: string;
-        indexSymbol: string;
-        currentPrice: number;
-        priceChange: number;
-        priceChangePercent: number;
-        contribution: number;
-        contributionPercent: number;
-        marketCap?: number | undefined;
-        companyName?: string | undefined;
-        indexName?: string | undefined;
-        indexWeight?: number | undefined;
-    }, {
-        symbol: string;
-        timestamp: string;
-        indexSymbol: string;
-        currentPrice: number;
-        priceChange: number;
-        priceChangePercent: number;
-        contribution: number;
-        contributionPercent: number;
-        marketCap?: number | undefined;
-        companyName?: string | undefined;
-        indexName?: string | undefined;
-        indexWeight?: number | undefined;
-    }>, "many">;
-    totalContributions: z.ZodObject<{
-        positive: z.ZodNumber;
-        negative: z.ZodNumber;
-        net: z.ZodNumber;
-    }, "strip", z.ZodTypeAny, {
-        positive: number;
-        negative: number;
-        net: number;
-    }, {
-        positive: number;
-        negative: number;
-        net: number;
-    }>;
-    timestamp: z.ZodString;
+export declare const StockScreenerSchema: z.ZodObject<{
+    symbols: z.ZodArray<z.ZodString, "many">;
+    minMarketCap: z.ZodOptional<z.ZodNumber>;
+    maxMarketCap: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
-    timestamp: string;
-    indexSymbol: string;
-    indexChange: number;
-    indexChangePercent: number;
-    topContributors: {
-        symbol: string;
-        timestamp: string;
-        indexSymbol: string;
-        currentPrice: number;
-        priceChange: number;
-        priceChangePercent: number;
-        contribution: number;
-        contributionPercent: number;
-        marketCap?: number | undefined;
-        companyName?: string | undefined;
-        indexName?: string | undefined;
-        indexWeight?: number | undefined;
-    }[];
-    bottomContributors: {
-        symbol: string;
-        timestamp: string;
-        indexSymbol: string;
-        currentPrice: number;
-        priceChange: number;
-        priceChangePercent: number;
-        contribution: number;
-        contributionPercent: number;
-        marketCap?: number | undefined;
-        companyName?: string | undefined;
-        indexName?: string | undefined;
-        indexWeight?: number | undefined;
-    }[];
-    totalContributions: {
-        positive: number;
-        negative: number;
-        net: number;
-    };
-    indexName?: string | undefined;
+    symbols: string[];
+    minMarketCap?: number | undefined;
+    maxMarketCap?: number | undefined;
 }, {
-    timestamp: string;
-    indexSymbol: string;
-    indexChange: number;
-    indexChangePercent: number;
-    topContributors: {
-        symbol: string;
-        timestamp: string;
-        indexSymbol: string;
-        currentPrice: number;
-        priceChange: number;
-        priceChangePercent: number;
-        contribution: number;
-        contributionPercent: number;
-        marketCap?: number | undefined;
-        companyName?: string | undefined;
-        indexName?: string | undefined;
-        indexWeight?: number | undefined;
-    }[];
-    bottomContributors: {
-        symbol: string;
-        timestamp: string;
-        indexSymbol: string;
-        currentPrice: number;
-        priceChange: number;
-        priceChangePercent: number;
-        contribution: number;
-        contributionPercent: number;
-        marketCap?: number | undefined;
-        companyName?: string | undefined;
-        indexName?: string | undefined;
-        indexWeight?: number | undefined;
-    }[];
-    totalContributions: {
-        positive: number;
-        negative: number;
-        net: number;
-    };
-    indexName?: string | undefined;
+    symbols: string[];
+    minMarketCap?: number | undefined;
+    maxMarketCap?: number | undefined;
 }>;
 export type StockSymbolInput = z.infer<typeof StockSymbolSchema>;
 export type StockPriceResponse = z.infer<typeof StockPriceResponseSchema>;
 export type FinancialDataResponse = z.infer<typeof FinancialDataResponseSchema>;
-export type IndexContributionInput = z.infer<typeof IndexContributionSchema>;
-export type ContributionResponse = z.infer<typeof ContributionResponseSchema>;
-export type IndexAnalysisResponse = z.infer<typeof IndexAnalysisResponseSchema>;
+export type ProfitabilityTurnAroundResponse = z.infer<typeof ProfitabilityTurnAroundSchema>;
+export type StockScreenerInput = z.infer<typeof StockScreenerSchema>;
 //# sourceMappingURL=schema.d.ts.map

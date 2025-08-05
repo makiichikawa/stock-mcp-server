@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IndexAnalysisResponseSchema = exports.ContributionResponseSchema = exports.IndexContributionSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
+exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
 const zod_1 = require("zod");
 exports.StockSymbolSchema = zod_1.z.object({
     symbol: zod_1.z.string().min(1, 'Stock symbol is required'),
@@ -51,36 +51,21 @@ exports.FinancialDataResponseSchema = zod_1.z.object({
     beta: zod_1.z.number().optional(),
     timestamp: zod_1.z.string(),
 });
-exports.IndexContributionSchema = zod_1.z.object({
-    symbol: zod_1.z.string().min(1, 'Stock symbol is required'),
-    indexSymbol: zod_1.z.string().min(1, 'Index symbol is required (e.g., N225, TOPX)'),
-});
-exports.ContributionResponseSchema = zod_1.z.object({
+exports.ProfitabilityTurnAroundSchema = zod_1.z.object({
     symbol: zod_1.z.string(),
     companyName: zod_1.z.string().optional(),
-    indexSymbol: zod_1.z.string(),
-    indexName: zod_1.z.string().optional(),
-    currentPrice: zod_1.z.number(),
-    priceChange: zod_1.z.number(),
-    priceChangePercent: zod_1.z.number(),
-    indexWeight: zod_1.z.number().optional(),
-    contribution: zod_1.z.number(),
-    contributionPercent: zod_1.z.number(),
+    currentQuarterNetIncome: zod_1.z.number().optional(),
+    previousQuarterNetIncome: zod_1.z.number().optional(),
+    currentQuarterEarnings: zod_1.z.number().optional(),
+    previousQuarterEarnings: zod_1.z.number().optional(),
+    turnAroundStatus: zod_1.z.enum(['profit_turnaround', 'loss_turnaround', 'continued_profit', 'continued_loss']),
+    quarterlyChange: zod_1.z.number().optional(),
     marketCap: zod_1.z.number().optional(),
     timestamp: zod_1.z.string(),
 });
-exports.IndexAnalysisResponseSchema = zod_1.z.object({
-    indexSymbol: zod_1.z.string(),
-    indexName: zod_1.z.string().optional(),
-    indexChange: zod_1.z.number(),
-    indexChangePercent: zod_1.z.number(),
-    topContributors: zod_1.z.array(exports.ContributionResponseSchema),
-    bottomContributors: zod_1.z.array(exports.ContributionResponseSchema),
-    totalContributions: zod_1.z.object({
-        positive: zod_1.z.number(),
-        negative: zod_1.z.number(),
-        net: zod_1.z.number(),
-    }),
-    timestamp: zod_1.z.string(),
+exports.StockScreenerSchema = zod_1.z.object({
+    symbols: zod_1.z.array(zod_1.z.string()).min(1, 'At least one stock symbol is required'),
+    minMarketCap: zod_1.z.number().optional(),
+    maxMarketCap: zod_1.z.number().optional(),
 });
 //# sourceMappingURL=schema.js.map

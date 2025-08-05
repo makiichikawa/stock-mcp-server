@@ -1,5 +1,5 @@
 import yahooFinance from 'yahoo-finance2';
-import { StockPriceResponse, StockSymbolInput, FinancialDataResponse } from '../types/schema.js';
+import { StockPriceResponse, StockSymbolInput, FinancialDataResponse, ProfitabilityTurnAroundResponse, StockScreenerInput } from '../types/schema.js';
 
 export class StockService {
   async getStockPrice(input: StockSymbolInput): Promise<StockPriceResponse> {
@@ -83,6 +83,104 @@ export class StockService {
     } catch (error) {
       throw new Error(`Failed to fetch financial data for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  async analyzeProfitabilityTurnAround(input: StockSymbolInput): Promise<ProfitabilityTurnAroundResponse> {
+    try {
+      const quoteSummary = await yahooFinance.quoteSummary(input.symbol, {
+        modules: ['incomeStatementHistoryQuarterly', 'earnings', 'price']
+      });
+
+      const incomeStatements = quoteSummary.incomeStatementHistoryQuarterly?.incomeStatementHistory;
+      const earnings = quoteSummary.earnings;
+      const price = quoteSummary.price;
+
+      if (!incomeStatements || incomeStatements.length < 2) {
+        throw new Error(`Insufficient quarterly data for symbol: ${input.symbol}`);
+      }
+
+      const sortedStatements = incomeStatements
+        .filter(statement => statement.netIncome !== undefined && statement.netIncome !== null)
+        .sort((a, b) => {
+          const dateA = new Date(a.endDate || '');
+          const dateB = new Date(b.endDate || '');
+          return dateB.getTime() - dateA.getTime();
+        });
+
+      if (sortedStatements.length < 2) {
+        throw new Error(`Insufficient net income data for symbol: ${input.symbol}`);
+      }
+
+      const currentQuarter = sortedStatements[0];
+      const previousQuarter = sortedStatements[1];
+
+      const currentNetIncome = Number(currentQuarter.netIncome) || 0;
+      const previousNetIncome = Number(previousQuarter.netIncome) || 0;
+
+      let turnAroundStatus: 'profit_turnaround' | 'loss_turnaround' | 'continued_profit' | 'continued_loss';
+      
+      if (previousNetIncome < 0 && currentNetIncome > 0) {
+        turnAroundStatus = 'profit_turnaround';
+      } else if (previousNetIncome > 0 && currentNetIncome < 0) {
+        turnAroundStatus = 'loss_turnaround';
+      } else if (previousNetIncome > 0 && currentNetIncome > 0) {
+        turnAroundStatus = 'continued_profit';
+      } else {
+        turnAroundStatus = 'continued_loss';
+      }
+
+      const quarterlyChange = previousNetIncome !== 0 
+        ? ((currentNetIncome - previousNetIncome) / Math.abs(previousNetIncome)) * 100
+        : undefined;
+
+      const quarterlyEarnings = earnings?.earningsChart?.quarterly || [];
+      const currentEarnings = quarterlyEarnings.length > 0 ? quarterlyEarnings[quarterlyEarnings.length - 1]?.actual : undefined;
+      const previousEarnings = quarterlyEarnings.length > 1 ? quarterlyEarnings[quarterlyEarnings.length - 2]?.actual : undefined;
+
+      return {
+        symbol: input.symbol,
+        companyName: price?.shortName || undefined,
+        currentQuarterNetIncome: currentNetIncome,
+        previousQuarterNetIncome: previousNetIncome,
+        currentQuarterEarnings: currentEarnings,
+        previousQuarterEarnings: previousEarnings,
+        turnAroundStatus,
+        quarterlyChange,
+        marketCap: Number(price?.marketCap) || undefined,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      throw new Error(`Failed to analyze profitability turnaround for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async screenProfitTurnAroundStocks(input: StockScreenerInput): Promise<ProfitabilityTurnAroundResponse[]> {
+    const results: ProfitabilityTurnAroundResponse[] = [];
+    
+    for (const symbol of input.symbols) {
+      try {
+        const analysis = await this.analyzeProfitabilityTurnAround({ symbol });
+        
+        if (input.minMarketCap && analysis.marketCap && analysis.marketCap < input.minMarketCap) {
+          continue;
+        }
+        
+        if (input.maxMarketCap && analysis.marketCap && analysis.marketCap > input.maxMarketCap) {
+          continue;
+        }
+        
+        if (analysis.turnAroundStatus === 'profit_turnaround') {
+          results.push(analysis);
+        }
+      } catch (error) {
+        console.warn(`Skipping ${symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+    
+    return results.sort((a, b) => {
+      if (!a.quarterlyChange || !b.quarterlyChange) return 0;
+      return b.quarterlyChange - a.quarterlyChange;
+    });
   }
 
 }

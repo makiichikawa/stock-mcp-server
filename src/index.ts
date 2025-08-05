@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { StockService } from './services/stockService';
-import { StockSymbolSchema } from './types/schema';
+import { StockSymbolSchema, StockScreenerSchema } from './types/schema';
 
 const server = new Server(
   {
@@ -71,6 +71,45 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['symbol'],
         },
       },
+      {
+        name: 'analyze_profitability_turnaround',
+        description: 'Analyze whether a stock has turned from loss to profit in recent quarters',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            symbol: {
+              type: 'string',
+              description: 'Stock symbol (e.g., AAPL, GOOGL, TSLA)',
+            },
+          },
+          required: ['symbol'],
+        },
+      },
+      {
+        name: 'screen_profit_turnaround_stocks',
+        description: 'Screen multiple stocks to find those that have turned from loss to profit',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            symbols: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description: 'Array of stock symbols to screen (e.g., ["AAPL", "GOOGL", "TSLA"])',
+            },
+            minMarketCap: {
+              type: 'number',
+              description: 'Minimum market capitalization filter (optional)',
+            },
+            maxMarketCap: {
+              type: 'number',
+              description: 'Maximum market capitalization filter (optional)',
+            },
+          },
+          required: ['symbols'],
+        },
+      },
     ],
   };
 });
@@ -114,6 +153,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (name === 'get_financial_data') {
       const validatedArgs = StockSymbolSchema.parse(args);
       const result = await stockService.getFinancialData(validatedArgs);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'analyze_profitability_turnaround') {
+      const validatedArgs = StockSymbolSchema.parse(args);
+      const result = await stockService.analyzeProfitabilityTurnAround(validatedArgs);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'screen_profit_turnaround_stocks') {
+      const validatedArgs = StockScreenerSchema.parse(args);
+      const result = await stockService.screenProfitTurnAroundStocks(validatedArgs);
       
       return {
         content: [

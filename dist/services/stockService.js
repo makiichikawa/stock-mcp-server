@@ -83,118 +83,91 @@ class StockService {
             throw new Error(`Failed to fetch financial data for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
-    async getIndexContribution(input) {
+    async analyzeProfitabilityTurnAround(input) {
         try {
-            // 個別銘柄の情報を取得
-            const stockQuote = await yahoo_finance2_1.default.quote(input.symbol);
-            // 指数の情報を取得
-            const indexQuote = await yahoo_finance2_1.default.quote(input.indexSymbol);
-            if (!stockQuote || !indexQuote) {
-                throw new Error(`Data not found for symbol: ${input.symbol} or index: ${input.indexSymbol}`);
+            const quoteSummary = await yahoo_finance2_1.default.quoteSummary(input.symbol, {
+                modules: ['incomeStatementHistoryQuarterly', 'earnings', 'price']
+            });
+            const incomeStatements = quoteSummary.incomeStatementHistoryQuarterly?.incomeStatementHistory;
+            const earnings = quoteSummary.earnings;
+            const price = quoteSummary.price;
+            if (!incomeStatements || incomeStatements.length < 2) {
+                throw new Error(`Insufficient quarterly data for symbol: ${input.symbol}`);
             }
-            // 基本的な寄与率計算（簡略化）
-            // 実際の寄与率は指数構成比率が必要だが、概算として時価総額ベースで計算
-            const priceChange = stockQuote.regularMarketChange || 0;
-            const priceChangePercent = stockQuote.regularMarketChangePercent || 0;
-            const marketCap = stockQuote.marketCap || 0;
-            // 日経平均の概算寄与率計算（株価変動 ÷ 除数）
-            // 日経平均の除数は約27.4（2025年概算）
-            const nikkeiDivisor = 27.4;
-            const contribution = input.indexSymbol.includes('N225') || input.indexSymbol.includes('NKY')
-                ? priceChange / nikkeiDivisor
-                : (priceChange * marketCap) / 1000000000000; // TOPIX等の時価総額加重平均の場合
-            const indexChange = indexQuote.regularMarketChange || 0;
-            const contributionPercent = indexChange !== 0 ? (contribution / indexChange) * 100 : 0;
+            const sortedStatements = incomeStatements
+                .filter(statement => statement.netIncome !== undefined && statement.netIncome !== null)
+                .sort((a, b) => {
+                const dateA = new Date(a.endDate || '');
+                const dateB = new Date(b.endDate || '');
+                return dateB.getTime() - dateA.getTime();
+            });
+            if (sortedStatements.length < 2) {
+                throw new Error(`Insufficient net income data for symbol: ${input.symbol}`);
+            }
+            const currentQuarter = sortedStatements[0];
+            const previousQuarter = sortedStatements[1];
+            const currentNetIncome = Number(currentQuarter.netIncome) || 0;
+            const previousNetIncome = Number(previousQuarter.netIncome) || 0;
+            let turnAroundStatus;
+            if (previousNetIncome < 0 && currentNetIncome > 0) {
+                turnAroundStatus = 'profit_turnaround';
+            }
+            else if (previousNetIncome > 0 && currentNetIncome < 0) {
+                turnAroundStatus = 'loss_turnaround';
+            }
+            else if (previousNetIncome > 0 && currentNetIncome > 0) {
+                turnAroundStatus = 'continued_profit';
+            }
+            else {
+                turnAroundStatus = 'continued_loss';
+            }
+            const quarterlyChange = previousNetIncome !== 0
+                ? ((currentNetIncome - previousNetIncome) / Math.abs(previousNetIncome)) * 100
+                : undefined;
+            const quarterlyEarnings = earnings?.earningsChart?.quarterly || [];
+            const currentEarnings = quarterlyEarnings.length > 0 ? quarterlyEarnings[quarterlyEarnings.length - 1]?.actual : undefined;
+            const previousEarnings = quarterlyEarnings.length > 1 ? quarterlyEarnings[quarterlyEarnings.length - 2]?.actual : undefined;
             return {
                 symbol: input.symbol,
-                companyName: stockQuote.shortName || stockQuote.longName,
-                indexSymbol: input.indexSymbol,
-                indexName: indexQuote.shortName || indexQuote.longName,
-                currentPrice: stockQuote.regularMarketPrice || 0,
-                priceChange: priceChange,
-                priceChangePercent: priceChangePercent,
-                indexWeight: undefined, // 正確な構成比率は別途データソースが必要
-                contribution: contribution,
-                contributionPercent: contributionPercent,
-                marketCap: marketCap,
+                companyName: price?.shortName || undefined,
+                currentQuarterNetIncome: currentNetIncome,
+                previousQuarterNetIncome: previousNetIncome,
+                currentQuarterEarnings: currentEarnings,
+                previousQuarterEarnings: previousEarnings,
+                turnAroundStatus,
+                quarterlyChange,
+                marketCap: Number(price?.marketCap) || undefined,
                 timestamp: new Date().toISOString(),
             };
         }
         catch (error) {
-            throw new Error(`Failed to fetch contribution data for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw new Error(`Failed to analyze profitability turnaround for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
-    async getIndexAnalysis(indexSymbol, topN = 10) {
-        try {
-            // 指数の基本情報を取得
-            const indexQuote = await yahoo_finance2_1.default.quote(indexSymbol);
-            if (!indexQuote) {
-                throw new Error(`Index data not found for symbol: ${indexSymbol}`);
+    async screenProfitTurnAroundStocks(input) {
+        const results = [];
+        for (const symbol of input.symbols) {
+            try {
+                const analysis = await this.analyzeProfitabilityTurnAround({ symbol });
+                if (input.minMarketCap && analysis.marketCap && analysis.marketCap < input.minMarketCap) {
+                    continue;
+                }
+                if (input.maxMarketCap && analysis.marketCap && analysis.marketCap > input.maxMarketCap) {
+                    continue;
+                }
+                if (analysis.turnAroundStatus === 'profit_turnaround') {
+                    results.push(analysis);
+                }
             }
-            // 日経平均主要構成銘柄（概算）
-            const nikkeiMajorSymbols = [
-                '7203.T', // トヨタ
-                '6758.T', // ソニーG
-                '9984.T', // ソフトバンクG
-                '8035.T', // 東京エレクトロン
-                '6861.T', // キーエンス
-                '9983.T', // ファーストリテイリング
-                '4063.T', // 信越化学
-                '6954.T', // ファナック
-                '8058.T', // 三菱商事
-                '7741.T', // HOYA
-            ];
-            // TOPIXの場合は代表的な大型株
-            const topixMajorSymbols = [
-                '7203.T', // トヨタ
-                '6758.T', // ソニーG
-                '8306.T', // 三菱UFJ
-                '9432.T', // NTT
-                '9984.T', // ソフトバンクG
-                '8035.T', // 東京エレクトロン
-                '6861.T', // キーエンス
-                '8031.T', // 三井物産
-                '8058.T', // 三菱商事
-                '4519.T', // 中外製薬
-            ];
-            const symbols = indexSymbol.includes('N225') || indexSymbol.includes('NKY')
-                ? nikkeiMajorSymbols
-                : topixMajorSymbols;
-            // 各銘柄の寄与率を取得
-            const contributions = await Promise.all(symbols.map(async (symbol) => {
-                try {
-                    return await this.getIndexContribution({ symbol, indexSymbol });
-                }
-                catch (error) {
-                    return null;
-                }
-            }));
-            const validContributions = contributions.filter((c) => c !== null);
-            // 寄与率でソート
-            const sortedContributions = validContributions.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
-            // プラス・マイナス寄与率を分類
-            const positiveContributions = sortedContributions.filter(c => c.contribution > 0);
-            const negativeContributions = sortedContributions.filter(c => c.contribution < 0);
-            const totalPositive = positiveContributions.reduce((sum, c) => sum + c.contribution, 0);
-            const totalNegative = negativeContributions.reduce((sum, c) => sum + c.contribution, 0);
-            return {
-                indexSymbol,
-                indexName: indexQuote.shortName || indexQuote.longName,
-                indexChange: indexQuote.regularMarketChange || 0,
-                indexChangePercent: indexQuote.regularMarketChangePercent || 0,
-                topContributors: positiveContributions.slice(0, topN),
-                bottomContributors: negativeContributions.slice(0, topN),
-                totalContributions: {
-                    positive: totalPositive,
-                    negative: totalNegative,
-                    net: totalPositive + totalNegative,
-                },
-                timestamp: new Date().toISOString(),
-            };
+            catch (error) {
+                console.warn(`Skipping ${symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
         }
-        catch (error) {
-            throw new Error(`Failed to fetch index analysis for ${indexSymbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+        return results.sort((a, b) => {
+            if (!a.quarterlyChange || !b.quarterlyChange)
+                return 0;
+            return b.quarterlyChange - a.quarterlyChange;
+        });
     }
 }
 exports.StockService = StockService;

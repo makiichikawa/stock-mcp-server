@@ -52,6 +52,27 @@ export const FinancialDataResponseSchema = z.object({
   timestamp: z.string(),
 });
 
+export const ProfitabilityTurnAroundSchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().optional(),
+  currentQuarterNetIncome: z.number().optional(),
+  previousQuarterNetIncome: z.number().optional(),
+  currentQuarterEarnings: z.number().optional(),
+  previousQuarterEarnings: z.number().optional(),
+  turnAroundStatus: z.enum(['profit_turnaround', 'loss_turnaround', 'continued_profit', 'continued_loss']),
+  quarterlyChange: z.number().optional(),
+  marketCap: z.number().optional(),
+  timestamp: z.string(),
+});
+
+export const StockScreenerSchema = z.object({
+  symbols: z.array(z.string()).min(1, 'At least one stock symbol is required'),
+  minMarketCap: z.number().optional(),
+  maxMarketCap: z.number().optional(),
+});
+
 export type StockSymbolInput = z.infer<typeof StockSymbolSchema>;
 export type StockPriceResponse = z.infer<typeof StockPriceResponseSchema>;
 export type FinancialDataResponse = z.infer<typeof FinancialDataResponseSchema>;
+export type ProfitabilityTurnAroundResponse = z.infer<typeof ProfitabilityTurnAroundSchema>;
+export type StockScreenerInput = z.infer<typeof StockScreenerSchema>;
