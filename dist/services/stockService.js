@@ -102,20 +102,28 @@ class StockService {
                 return dateB.getTime() - dateA.getTime();
             });
             if (sortedStatements.length < 2) {
-                throw new Error(`Insufficient net income data for symbol: ${input.symbol}`);
+                throw new Error(`Insufficient financial data for symbol: ${input.symbol}`);
             }
             const currentQuarter = sortedStatements[0];
             const previousQuarter = sortedStatements[1];
             const currentNetIncome = Number(currentQuarter.netIncome) || 0;
             const previousNetIncome = Number(previousQuarter.netIncome) || 0;
+            // Yahoo Finance APIから利用可能なフィールドのみ使用
+            const currentOperatingIncome = Number(currentQuarter.operatingIncome) ||
+                ((Number(currentQuarter.totalRevenue) || 0) - (Number(currentQuarter.totalOperatingExpenses) || 0)) || 0;
+            const previousOperatingIncome = Number(previousQuarter.operatingIncome) ||
+                ((Number(previousQuarter.totalRevenue) || 0) - (Number(previousQuarter.totalOperatingExpenses) || 0)) || 0;
             let turnAroundStatus;
-            if (previousNetIncome < 0 && currentNetIncome > 0) {
+            // 純利益と営業利益の2つで黒字転換を判定
+            const netIncomeTurnAround = previousNetIncome < 0 && currentNetIncome > 0;
+            const operatingIncomeTurnAround = previousOperatingIncome < 0 && currentOperatingIncome > 0;
+            if (netIncomeTurnAround && operatingIncomeTurnAround) {
                 turnAroundStatus = 'profit_turnaround';
             }
             else if (previousNetIncome > 0 && currentNetIncome < 0) {
                 turnAroundStatus = 'loss_turnaround';
             }
-            else if (previousNetIncome > 0 && currentNetIncome > 0) {
+            else if (currentNetIncome > 0 && currentOperatingIncome > 0) {
                 turnAroundStatus = 'continued_profit';
             }
             else {
@@ -132,6 +140,8 @@ class StockService {
                 companyName: price?.shortName || undefined,
                 currentQuarterNetIncome: currentNetIncome,
                 previousQuarterNetIncome: previousNetIncome,
+                currentQuarterOperatingIncome: currentOperatingIncome,
+                previousQuarterOperatingIncome: previousOperatingIncome,
                 currentQuarterEarnings: currentEarnings,
                 previousQuarterEarnings: previousEarnings,
                 turnAroundStatus,

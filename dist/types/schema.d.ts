@@ -145,6 +145,8 @@ export declare const ProfitabilityTurnAroundSchema: z.ZodObject<{
     companyName: z.ZodOptional<z.ZodString>;
     currentQuarterNetIncome: z.ZodOptional<z.ZodNumber>;
     previousQuarterNetIncome: z.ZodOptional<z.ZodNumber>;
+    currentQuarterOperatingIncome: z.ZodOptional<z.ZodNumber>;
+    previousQuarterOperatingIncome: z.ZodOptional<z.ZodNumber>;
     currentQuarterEarnings: z.ZodOptional<z.ZodNumber>;
     previousQuarterEarnings: z.ZodOptional<z.ZodNumber>;
     turnAroundStatus: z.ZodEnum<["profit_turnaround", "loss_turnaround", "continued_profit", "continued_loss"]>;
@@ -159,6 +161,8 @@ export declare const ProfitabilityTurnAroundSchema: z.ZodObject<{
     companyName?: string | undefined;
     currentQuarterNetIncome?: number | undefined;
     previousQuarterNetIncome?: number | undefined;
+    currentQuarterOperatingIncome?: number | undefined;
+    previousQuarterOperatingIncome?: number | undefined;
     currentQuarterEarnings?: number | undefined;
     previousQuarterEarnings?: number | undefined;
     quarterlyChange?: number | undefined;
@@ -170,6 +174,8 @@ export declare const ProfitabilityTurnAroundSchema: z.ZodObject<{
     companyName?: string | undefined;
     currentQuarterNetIncome?: number | undefined;
     previousQuarterNetIncome?: number | undefined;
+    currentQuarterOperatingIncome?: number | undefined;
+    previousQuarterOperatingIncome?: number | undefined;
     currentQuarterEarnings?: number | undefined;
     previousQuarterEarnings?: number | undefined;
     quarterlyChange?: number | undefined;

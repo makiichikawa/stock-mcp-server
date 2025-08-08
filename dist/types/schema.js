@@ -56,6 +56,8 @@ exports.ProfitabilityTurnAroundSchema = zod_1.z.object({
     companyName: zod_1.z.string().optional(),
     currentQuarterNetIncome: zod_1.z.number().optional(),
     previousQuarterNetIncome: zod_1.z.number().optional(),
+    currentQuarterOperatingIncome: zod_1.z.number().optional(),
+    previousQuarterOperatingIncome: zod_1.z.number().optional(),
     currentQuarterEarnings: zod_1.z.number().optional(),
     previousQuarterEarnings: zod_1.z.number().optional(),
     turnAroundStatus: zod_1.z.enum(['profit_turnaround', 'loss_turnaround', 'continued_profit', 'continued_loss']),

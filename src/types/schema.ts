@@ -57,6 +57,8 @@ export const ProfitabilityTurnAroundSchema = z.object({
   companyName: z.string().optional(),
   currentQuarterNetIncome: z.number().optional(),
   previousQuarterNetIncome: z.number().optional(),
+  currentQuarterOperatingIncome: z.number().optional(),
+  previousQuarterOperatingIncome: z.number().optional(),
   currentQuarterEarnings: z.number().optional(),
   previousQuarterEarnings: z.number().optional(),
   turnAroundStatus: z.enum(['profit_turnaround', 'loss_turnaround', 'continued_profit', 'continued_loss']),
