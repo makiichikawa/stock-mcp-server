@@ -3,3 +3,7 @@ dist/
 *.log
 .env
 .DS_Store
+
+# Test and debug files
+tests/
+debug/
