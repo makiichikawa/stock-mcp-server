@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
+exports.EarningsGuidanceSchema = exports.GuidanceItemSchema = exports.AnnualEarningsForecastSchema = exports.AnnualForecastItemSchema = exports.QuarterlyEarningsForecastSchema = exports.QuarterlyForecastItemSchema = exports.ForecastSourceSchema = exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
 const zod_1 = require("zod");
 exports.StockSymbolSchema = zod_1.z.object({
     symbol: zod_1.z.string().min(1, 'Stock symbol is required'),
@@ -69,5 +69,54 @@ exports.StockScreenerSchema = zod_1.z.object({
     symbols: zod_1.z.array(zod_1.z.string()).min(1, 'At least one stock symbol is required'),
     minMarketCap: zod_1.z.number().optional(),
     maxMarketCap: zod_1.z.number().optional(),
+});
+exports.ForecastSourceSchema = zod_1.z.enum(['sec_filing', 'analyst_consensus', 'management_guidance', 'yahoo_finance']);
+exports.QuarterlyForecastItemSchema = zod_1.z.object({
+    quarter: zod_1.z.string(), // "Q1 2025", "Q2 2025", etc.
+    fiscalYear: zod_1.z.number(),
+    earningsPerShare: zod_1.z.number().optional(),
+    revenue: zod_1.z.number().optional(),
+    netIncome: zod_1.z.number().optional(),
+    source: exports.ForecastSourceSchema,
+    updatedDate: zod_1.z.string(),
+});
+exports.QuarterlyEarningsForecastSchema = zod_1.z.object({
+    symbol: zod_1.z.string(),
+    companyName: zod_1.z.string().optional(),
+    forecasts: zod_1.z.array(exports.QuarterlyForecastItemSchema),
+    timestamp: zod_1.z.string(),
+});
+exports.AnnualForecastItemSchema = zod_1.z.object({
+    fiscalYear: zod_1.z.number(),
+    earningsPerShare: zod_1.z.number().optional(),
+    revenue: zod_1.z.number().optional(),
+    netIncome: zod_1.z.number().optional(),
+    source: exports.ForecastSourceSchema,
+    updatedDate: zod_1.z.string(),
+});
+exports.AnnualEarningsForecastSchema = zod_1.z.object({
+    symbol: zod_1.z.string(),
+    companyName: zod_1.z.string().optional(),
+    forecasts: zod_1.z.array(exports.AnnualForecastItemSchema),
+    timestamp: zod_1.z.string(),
+});
+exports.GuidanceItemSchema = zod_1.z.object({
+    guidanceType: zod_1.z.enum(['revenue', 'earnings', 'margin', 'capex', 'other']),
+    period: zod_1.z.string(), // "Q1 2025", "FY2025", etc.
+    guidance: zod_1.z.string(), // Actual guidance text
+    value: zod_1.z.number().optional(),
+    valueRange: zod_1.z.object({
+        min: zod_1.z.number().optional(),
+        max: zod_1.z.number().optional(),
+    }).optional(),
+    source: zod_1.z.string(), // Filing type: "10-K", "10-Q", "8-K", "Earnings Call"
+    filingDate: zod_1.z.string(),
+    url: zod_1.z.string().optional(),
+});
+exports.EarningsGuidanceSchema = zod_1.z.object({
+    symbol: zod_1.z.string(),
+    companyName: zod_1.z.string().optional(),
+    guidances: zod_1.z.array(exports.GuidanceItemSchema),
+    timestamp: zod_1.z.string(),
 });
 //# sourceMappingURL=schema.js.map

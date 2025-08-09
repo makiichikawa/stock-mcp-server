@@ -193,9 +193,293 @@ export declare const StockScreenerSchema: z.ZodObject<{
     minMarketCap?: number | undefined;
     maxMarketCap?: number | undefined;
 }>;
+export declare const ForecastSourceSchema: z.ZodEnum<["sec_filing", "analyst_consensus", "management_guidance", "yahoo_finance"]>;
+export declare const QuarterlyForecastItemSchema: z.ZodObject<{
+    quarter: z.ZodString;
+    fiscalYear: z.ZodNumber;
+    earningsPerShare: z.ZodOptional<z.ZodNumber>;
+    revenue: z.ZodOptional<z.ZodNumber>;
+    netIncome: z.ZodOptional<z.ZodNumber>;
+    source: z.ZodEnum<["sec_filing", "analyst_consensus", "management_guidance", "yahoo_finance"]>;
+    updatedDate: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    quarter: string;
+    fiscalYear: number;
+    source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+    updatedDate: string;
+    earningsPerShare?: number | undefined;
+    revenue?: number | undefined;
+    netIncome?: number | undefined;
+}, {
+    quarter: string;
+    fiscalYear: number;
+    source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+    updatedDate: string;
+    earningsPerShare?: number | undefined;
+    revenue?: number | undefined;
+    netIncome?: number | undefined;
+}>;
+export declare const QuarterlyEarningsForecastSchema: z.ZodObject<{
+    symbol: z.ZodString;
+    companyName: z.ZodOptional<z.ZodString>;
+    forecasts: z.ZodArray<z.ZodObject<{
+        quarter: z.ZodString;
+        fiscalYear: z.ZodNumber;
+        earningsPerShare: z.ZodOptional<z.ZodNumber>;
+        revenue: z.ZodOptional<z.ZodNumber>;
+        netIncome: z.ZodOptional<z.ZodNumber>;
+        source: z.ZodEnum<["sec_filing", "analyst_consensus", "management_guidance", "yahoo_finance"]>;
+        updatedDate: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        quarter: string;
+        fiscalYear: number;
+        source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+        updatedDate: string;
+        earningsPerShare?: number | undefined;
+        revenue?: number | undefined;
+        netIncome?: number | undefined;
+    }, {
+        quarter: string;
+        fiscalYear: number;
+        source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+        updatedDate: string;
+        earningsPerShare?: number | undefined;
+        revenue?: number | undefined;
+        netIncome?: number | undefined;
+    }>, "many">;
+    timestamp: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    symbol: string;
+    timestamp: string;
+    forecasts: {
+        quarter: string;
+        fiscalYear: number;
+        source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+        updatedDate: string;
+        earningsPerShare?: number | undefined;
+        revenue?: number | undefined;
+        netIncome?: number | undefined;
+    }[];
+    companyName?: string | undefined;
+}, {
+    symbol: string;
+    timestamp: string;
+    forecasts: {
+        quarter: string;
+        fiscalYear: number;
+        source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+        updatedDate: string;
+        earningsPerShare?: number | undefined;
+        revenue?: number | undefined;
+        netIncome?: number | undefined;
+    }[];
+    companyName?: string | undefined;
+}>;
+export declare const AnnualForecastItemSchema: z.ZodObject<{
+    fiscalYear: z.ZodNumber;
+    earningsPerShare: z.ZodOptional<z.ZodNumber>;
+    revenue: z.ZodOptional<z.ZodNumber>;
+    netIncome: z.ZodOptional<z.ZodNumber>;
+    source: z.ZodEnum<["sec_filing", "analyst_consensus", "management_guidance", "yahoo_finance"]>;
+    updatedDate: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    fiscalYear: number;
+    source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+    updatedDate: string;
+    earningsPerShare?: number | undefined;
+    revenue?: number | undefined;
+    netIncome?: number | undefined;
+}, {
+    fiscalYear: number;
+    source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+    updatedDate: string;
+    earningsPerShare?: number | undefined;
+    revenue?: number | undefined;
+    netIncome?: number | undefined;
+}>;
+export declare const AnnualEarningsForecastSchema: z.ZodObject<{
+    symbol: z.ZodString;
+    companyName: z.ZodOptional<z.ZodString>;
+    forecasts: z.ZodArray<z.ZodObject<{
+        fiscalYear: z.ZodNumber;
+        earningsPerShare: z.ZodOptional<z.ZodNumber>;
+        revenue: z.ZodOptional<z.ZodNumber>;
+        netIncome: z.ZodOptional<z.ZodNumber>;
+        source: z.ZodEnum<["sec_filing", "analyst_consensus", "management_guidance", "yahoo_finance"]>;
+        updatedDate: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        fiscalYear: number;
+        source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+        updatedDate: string;
+        earningsPerShare?: number | undefined;
+        revenue?: number | undefined;
+        netIncome?: number | undefined;
+    }, {
+        fiscalYear: number;
+        source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+        updatedDate: string;
+        earningsPerShare?: number | undefined;
+        revenue?: number | undefined;
+        netIncome?: number | undefined;
+    }>, "many">;
+    timestamp: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    symbol: string;
+    timestamp: string;
+    forecasts: {
+        fiscalYear: number;
+        source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+        updatedDate: string;
+        earningsPerShare?: number | undefined;
+        revenue?: number | undefined;
+        netIncome?: number | undefined;
+    }[];
+    companyName?: string | undefined;
+}, {
+    symbol: string;
+    timestamp: string;
+    forecasts: {
+        fiscalYear: number;
+        source: "sec_filing" | "analyst_consensus" | "management_guidance" | "yahoo_finance";
+        updatedDate: string;
+        earningsPerShare?: number | undefined;
+        revenue?: number | undefined;
+        netIncome?: number | undefined;
+    }[];
+    companyName?: string | undefined;
+}>;
+export declare const GuidanceItemSchema: z.ZodObject<{
+    guidanceType: z.ZodEnum<["revenue", "earnings", "margin", "capex", "other"]>;
+    period: z.ZodString;
+    guidance: z.ZodString;
+    value: z.ZodOptional<z.ZodNumber>;
+    valueRange: z.ZodOptional<z.ZodObject<{
+        min: z.ZodOptional<z.ZodNumber>;
+        max: z.ZodOptional<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        min?: number | undefined;
+        max?: number | undefined;
+    }, {
+        min?: number | undefined;
+        max?: number | undefined;
+    }>>;
+    source: z.ZodString;
+    filingDate: z.ZodString;
+    url: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    source: string;
+    guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+    period: string;
+    guidance: string;
+    filingDate: string;
+    value?: number | undefined;
+    valueRange?: {
+        min?: number | undefined;
+        max?: number | undefined;
+    } | undefined;
+    url?: string | undefined;
+}, {
+    source: string;
+    guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+    period: string;
+    guidance: string;
+    filingDate: string;
+    value?: number | undefined;
+    valueRange?: {
+        min?: number | undefined;
+        max?: number | undefined;
+    } | undefined;
+    url?: string | undefined;
+}>;
+export declare const EarningsGuidanceSchema: z.ZodObject<{
+    symbol: z.ZodString;
+    companyName: z.ZodOptional<z.ZodString>;
+    guidances: z.ZodArray<z.ZodObject<{
+        guidanceType: z.ZodEnum<["revenue", "earnings", "margin", "capex", "other"]>;
+        period: z.ZodString;
+        guidance: z.ZodString;
+        value: z.ZodOptional<z.ZodNumber>;
+        valueRange: z.ZodOptional<z.ZodObject<{
+            min: z.ZodOptional<z.ZodNumber>;
+            max: z.ZodOptional<z.ZodNumber>;
+        }, "strip", z.ZodTypeAny, {
+            min?: number | undefined;
+            max?: number | undefined;
+        }, {
+            min?: number | undefined;
+            max?: number | undefined;
+        }>>;
+        source: z.ZodString;
+        filingDate: z.ZodString;
+        url: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        source: string;
+        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+        period: string;
+        guidance: string;
+        filingDate: string;
+        value?: number | undefined;
+        valueRange?: {
+            min?: number | undefined;
+            max?: number | undefined;
+        } | undefined;
+        url?: string | undefined;
+    }, {
+        source: string;
+        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+        period: string;
+        guidance: string;
+        filingDate: string;
+        value?: number | undefined;
+        valueRange?: {
+            min?: number | undefined;
+            max?: number | undefined;
+        } | undefined;
+        url?: string | undefined;
+    }>, "many">;
+    timestamp: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    symbol: string;
+    timestamp: string;
+    guidances: {
+        source: string;
+        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+        period: string;
+        guidance: string;
+        filingDate: string;
+        value?: number | undefined;
+        valueRange?: {
+            min?: number | undefined;
+            max?: number | undefined;
+        } | undefined;
+        url?: string | undefined;
+    }[];
+    companyName?: string | undefined;
+}, {
+    symbol: string;
+    timestamp: string;
+    guidances: {
+        source: string;
+        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+        period: string;
+        guidance: string;
+        filingDate: string;
+        value?: number | undefined;
+        valueRange?: {
+            min?: number | undefined;
+            max?: number | undefined;
+        } | undefined;
+        url?: string | undefined;
+    }[];
+    companyName?: string | undefined;
+}>;
 export type StockSymbolInput = z.infer<typeof StockSymbolSchema>;
 export type StockPriceResponse = z.infer<typeof StockPriceResponseSchema>;
 export type FinancialDataResponse = z.infer<typeof FinancialDataResponseSchema>;
 export type ProfitabilityTurnAroundResponse = z.infer<typeof ProfitabilityTurnAroundSchema>;
 export type StockScreenerInput = z.infer<typeof StockScreenerSchema>;
+export type QuarterlyEarningsForecastResponse = z.infer<typeof QuarterlyEarningsForecastSchema>;
+export type AnnualEarningsForecastResponse = z.infer<typeof AnnualEarningsForecastSchema>;
+export type EarningsGuidanceResponse = z.infer<typeof EarningsGuidanceSchema>;
+export type ForecastSource = z.infer<typeof ForecastSourceSchema>;
 //# sourceMappingURL=schema.d.ts.map

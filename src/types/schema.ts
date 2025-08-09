@@ -73,8 +73,68 @@ export const StockScreenerSchema = z.object({
   maxMarketCap: z.number().optional(),
 });
 
+export const ForecastSourceSchema = z.enum(['sec_filing', 'analyst_consensus', 'management_guidance', 'yahoo_finance']);
+
+export const QuarterlyForecastItemSchema = z.object({
+  quarter: z.string(), // "Q1 2025", "Q2 2025", etc.
+  fiscalYear: z.number(),
+  earningsPerShare: z.number().optional(),
+  revenue: z.number().optional(),
+  netIncome: z.number().optional(),
+  source: ForecastSourceSchema,
+  updatedDate: z.string(),
+});
+
+export const QuarterlyEarningsForecastSchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().optional(),
+  forecasts: z.array(QuarterlyForecastItemSchema),
+  timestamp: z.string(),
+});
+
+export const AnnualForecastItemSchema = z.object({
+  fiscalYear: z.number(),
+  earningsPerShare: z.number().optional(),
+  revenue: z.number().optional(),
+  netIncome: z.number().optional(),
+  source: ForecastSourceSchema,
+  updatedDate: z.string(),
+});
+
+export const AnnualEarningsForecastSchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().optional(),
+  forecasts: z.array(AnnualForecastItemSchema),
+  timestamp: z.string(),
+});
+
+export const GuidanceItemSchema = z.object({
+  guidanceType: z.enum(['revenue', 'earnings', 'margin', 'capex', 'other']),
+  period: z.string(), // "Q1 2025", "FY2025", etc.
+  guidance: z.string(), // Actual guidance text
+  value: z.number().optional(),
+  valueRange: z.object({
+    min: z.number().optional(),
+    max: z.number().optional(),
+  }).optional(),
+  source: z.string(), // Filing type: "10-K", "10-Q", "8-K", "Earnings Call"
+  filingDate: z.string(),
+  url: z.string().optional(),
+});
+
+export const EarningsGuidanceSchema = z.object({
+  symbol: z.string(),
+  companyName: z.string().optional(),
+  guidances: z.array(GuidanceItemSchema),
+  timestamp: z.string(),
+});
+
 export type StockSymbolInput = z.infer<typeof StockSymbolSchema>;
 export type StockPriceResponse = z.infer<typeof StockPriceResponseSchema>;
 export type FinancialDataResponse = z.infer<typeof FinancialDataResponseSchema>;
 export type ProfitabilityTurnAroundResponse = z.infer<typeof ProfitabilityTurnAroundSchema>;
 export type StockScreenerInput = z.infer<typeof StockScreenerSchema>;
+export type QuarterlyEarningsForecastResponse = z.infer<typeof QuarterlyEarningsForecastSchema>;
+export type AnnualEarningsForecastResponse = z.infer<typeof AnnualEarningsForecastSchema>;
+export type EarningsGuidanceResponse = z.infer<typeof EarningsGuidanceSchema>;
+export type ForecastSource = z.infer<typeof ForecastSourceSchema>;

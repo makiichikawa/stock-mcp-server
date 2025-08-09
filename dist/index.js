@@ -102,6 +102,48 @@ server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
                     required: ['symbols'],
                 },
             },
+            {
+                name: 'get_quarterly_earnings_forecast',
+                description: 'Get quarterly earnings forecast and analyst estimates for a stock',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        symbol: {
+                            type: 'string',
+                            description: 'Stock symbol (e.g., AAPL, GOOGL, TSLA)',
+                        },
+                    },
+                    required: ['symbol'],
+                },
+            },
+            {
+                name: 'get_annual_earnings_forecast',
+                description: 'Get annual earnings forecast and analyst estimates for a stock',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        symbol: {
+                            type: 'string',
+                            description: 'Stock symbol (e.g., AAPL, GOOGL, TSLA)',
+                        },
+                    },
+                    required: ['symbol'],
+                },
+            },
+            {
+                name: 'get_earnings_guidance',
+                description: 'Get management guidance information from SEC filings and earnings calls',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        symbol: {
+                            type: 'string',
+                            description: 'Stock symbol (e.g., AAPL, GOOGL, TSLA)',
+                        },
+                    },
+                    required: ['symbol'],
+                },
+            },
         ],
     };
 });
@@ -162,6 +204,42 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
         if (name === 'screen_profit_turnaround_stocks') {
             const validatedArgs = schema_1.StockScreenerSchema.parse(args);
             const result = await stockService.screenProfitTurnAroundStocks(validatedArgs);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+            };
+        }
+        if (name === 'get_quarterly_earnings_forecast') {
+            const validatedArgs = schema_1.StockSymbolSchema.parse(args);
+            const result = await stockService.getQuarterlyEarningsForecast(validatedArgs);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+            };
+        }
+        if (name === 'get_annual_earnings_forecast') {
+            const validatedArgs = schema_1.StockSymbolSchema.parse(args);
+            const result = await stockService.getAnnualEarningsForecast(validatedArgs);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+            };
+        }
+        if (name === 'get_earnings_guidance') {
+            const validatedArgs = schema_1.StockSymbolSchema.parse(args);
+            const result = await stockService.getEarningsGuidance(validatedArgs);
             return {
                 content: [
                     {
