@@ -8,6 +8,7 @@ export class StockService {
   constructor() {
     this.secService = new SecService();
   }
+  // 指定されたシンボルの株価情報を取得する
   async getStockPrice(input: StockSymbolInput): Promise<StockPriceResponse> {
     try {
       const quote = await yahooFinance.quote(input.symbol);
@@ -31,11 +32,13 @@ export class StockService {
     }
   }
 
+  // 複数の銘柄の株価情報を一括取得する
   async getMultipleStockPrices(symbols: string[]): Promise<StockPriceResponse[]> {
     const promises = symbols.map(symbol => this.getStockPrice({ symbol }));
     return Promise.all(promises);
   }
 
+  // 指定されたシンボルの財務データを取得する（PER、PBR、ROE等の指標を含む）
   async getFinancialData(input: StockSymbolInput): Promise<FinancialDataResponse> {
     try {
       const quoteSummary = await yahooFinance.quoteSummary(input.symbol, {
@@ -91,6 +94,7 @@ export class StockService {
     }
   }
 
+  // 四半期決算データから黒字転換を分析する（純利益と営業利益の変化を追跡）
   async analyzeProfitabilityTurnAround(input: StockSymbolInput): Promise<ProfitabilityTurnAroundResponse> {
     try {
       const quoteSummary = await yahooFinance.quoteSummary(input.symbol, {
@@ -171,6 +175,7 @@ export class StockService {
     }
   }
 
+  // 複数銘柄から黒字転換した企業をスクリーニングする（時価総額フィルター付き）
   async screenProfitTurnAroundStocks(input: StockScreenerInput): Promise<ProfitabilityTurnAroundResponse[]> {
     const results: ProfitabilityTurnAroundResponse[] = [];
     
@@ -200,6 +205,7 @@ export class StockService {
     });
   }
 
+  // 四半期業績予想データを取得する（アナリスト予想とYahoo Financeデータを統合）
   async getQuarterlyEarningsForecast(input: StockSymbolInput): Promise<QuarterlyEarningsForecastResponse> {
     try {
       const quoteSummary = await yahooFinance.quoteSummary(input.symbol, {
@@ -292,6 +298,7 @@ export class StockService {
     }
   }
 
+  // 年次業績予想データを取得する（最大5年分の予想を提供）
   async getAnnualEarningsForecast(input: StockSymbolInput): Promise<AnnualEarningsForecastResponse> {
     try {
       const quoteSummary = await yahooFinance.quoteSummary(input.symbol, {
@@ -348,6 +355,7 @@ export class StockService {
     }
   }
 
+  // SEC書類から経営ガイダンスを抽出する（10-K、10-Q、8-Kファイリングを解析）
   async getEarningsGuidance(input: StockSymbolInput): Promise<EarningsGuidanceResponse> {
     try {
       const price = await yahooFinance.quoteSummary(input.symbol, {
@@ -414,6 +422,7 @@ export class StockService {
     }
   }
 
+  // ガイダンステキストから数値を抽出する（$123 million、12.3%等に対応）
   private extractNumericValue(text: string): number | undefined {
     // $123.45 million, 12.3%, 等の数値を抽出
     const patterns = [
@@ -442,6 +451,7 @@ export class StockService {
     return undefined;
   }
 
+  // ガイダンステキストから数値範囲を抽出する（"$10-15 million"等に対応）
   private extractValueRange(text: string): { min?: number; max?: number } | undefined {
     // "between $10 million and $15 million", "$10-15 million" 等の範囲を抽出
     const rangePatterns = [

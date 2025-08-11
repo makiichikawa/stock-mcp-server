@@ -34,6 +34,7 @@ export class SecService {
     'User-Agent': 'Mozilla/5.0 (compatible; Stock-MCP-Server/1.0; +https://github.com/user/stock-mcp-server)'
   };
 
+  // CIK番号を使用してSEC企業情報を検索する
   async findCompanyByCik(cik: string): Promise<SecCompanyInfo | null> {
     try {
       const paddedCik = cik.padStart(10, '0');
@@ -61,6 +62,7 @@ export class SecService {
     }
   }
 
+  // 指定されたCIKの最近のSECファイリング情報を取得する（10-K、10-Q、8-K等）
   async getRecentFilings(cik: string, formTypes: string[] = ['10-K', '10-Q', '8-K'], limit: number = 10): Promise<SecFiling[]> {
     try {
       const paddedCik = cik.padStart(10, '0');
@@ -103,6 +105,7 @@ export class SecService {
     }
   }
 
+  // SECファイリングの具体的な内容（テキスト）を取得する
   async getFilingContent(cik: string, accessionNumber: string, primaryDocument: string): Promise<string> {
     try {
       const paddedCik = cik.padStart(10, '0');
@@ -124,6 +127,7 @@ export class SecService {
     }
   }
 
+  // SECファイリングのテキストから経営ガイダンス情報を抽出する（収益予想、利益予想等）
   extractGuidanceFromText(content: string, filingType: string): Array<{
     guidanceType: string;
     guidance: string;
@@ -165,6 +169,7 @@ export class SecService {
     return uniqueGuidances.slice(0, 10); // 最大10件まで
   }
 
+  // ガイダンステキストをカテゴリ別に分類する（revenue、earnings、margin、capex等）
   private categorizeGuidance(guidanceText: string): string {
     const text = guidanceText.toLowerCase();
     
@@ -176,6 +181,7 @@ export class SecService {
     return 'other';
   }
 
+  // 株式ティッカーシンボルをSEC CIK番号に変換する
   async convertTickerToCik(ticker: string): Promise<string | null> {
     try {
       const url = `${this.baseUrl}/files/company_tickers.json`;
@@ -206,10 +212,12 @@ export class SecService {
     }
   }
 
+  // 指定されたミリ秒待機する（レート制限対応用）
   private wait(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  // SEC APIのレート制限（10リクエスト/秒）に対応したリクエスト実行
   private async rateLimitedRequest<T>(requestFn: () => Promise<T>): Promise<T> {
     // SEC API rate limit: 10 requests per second
     await this.wait(100); // 100ms between requests
