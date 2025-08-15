@@ -152,6 +152,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['symbol'],
         },
       },
+      {
+        name: 'get_10k_earnings_guidance',
+        description: 'Get detailed management guidance information specifically from 10-K filings (annual reports)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            symbol: {
+              type: 'string',
+              description: 'Stock symbol (e.g., AAPL, GOOGL, TSLA)',
+            },
+          },
+          required: ['symbol'],
+        },
+      },
     ],
   };
 });
@@ -265,6 +279,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (name === 'get_earnings_guidance') {
       const validatedArgs = StockSymbolSchema.parse(args);
       const result = await stockService.getEarningsGuidance(validatedArgs);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'get_10k_earnings_guidance') {
+      const validatedArgs = StockSymbolSchema.parse(args);
+      const result = await stockService.get10KEarningsGuidance(validatedArgs);
       
       return {
         content: [

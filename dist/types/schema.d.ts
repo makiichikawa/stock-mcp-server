@@ -349,7 +349,7 @@ export declare const AnnualEarningsForecastSchema: z.ZodObject<{
     companyName?: string | undefined;
 }>;
 export declare const GuidanceItemSchema: z.ZodObject<{
-    guidanceType: z.ZodEnum<["revenue", "earnings", "margin", "capex", "other"]>;
+    guidanceType: z.ZodEnum<["revenue", "earnings", "margin", "capex", "operational", "growth", "strategic", "other"]>;
     period: z.ZodString;
     guidance: z.ZodString;
     value: z.ZodOptional<z.ZodNumber>;
@@ -366,9 +366,10 @@ export declare const GuidanceItemSchema: z.ZodObject<{
     source: z.ZodString;
     filingDate: z.ZodString;
     url: z.ZodOptional<z.ZodString>;
+    context: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     source: string;
-    guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+    guidanceType: "revenue" | "earnings" | "margin" | "capex" | "operational" | "growth" | "strategic" | "other";
     period: string;
     guidance: string;
     filingDate: string;
@@ -378,9 +379,10 @@ export declare const GuidanceItemSchema: z.ZodObject<{
         max?: number | undefined;
     } | undefined;
     url?: string | undefined;
+    context?: string | undefined;
 }, {
     source: string;
-    guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+    guidanceType: "revenue" | "earnings" | "margin" | "capex" | "operational" | "growth" | "strategic" | "other";
     period: string;
     guidance: string;
     filingDate: string;
@@ -390,12 +392,13 @@ export declare const GuidanceItemSchema: z.ZodObject<{
         max?: number | undefined;
     } | undefined;
     url?: string | undefined;
+    context?: string | undefined;
 }>;
 export declare const EarningsGuidanceSchema: z.ZodObject<{
     symbol: z.ZodString;
     companyName: z.ZodOptional<z.ZodString>;
     guidances: z.ZodArray<z.ZodObject<{
-        guidanceType: z.ZodEnum<["revenue", "earnings", "margin", "capex", "other"]>;
+        guidanceType: z.ZodEnum<["revenue", "earnings", "margin", "capex", "operational", "growth", "strategic", "other"]>;
         period: z.ZodString;
         guidance: z.ZodString;
         value: z.ZodOptional<z.ZodNumber>;
@@ -412,9 +415,10 @@ export declare const EarningsGuidanceSchema: z.ZodObject<{
         source: z.ZodString;
         filingDate: z.ZodString;
         url: z.ZodOptional<z.ZodString>;
+        context: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
         source: string;
-        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "operational" | "growth" | "strategic" | "other";
         period: string;
         guidance: string;
         filingDate: string;
@@ -424,9 +428,10 @@ export declare const EarningsGuidanceSchema: z.ZodObject<{
             max?: number | undefined;
         } | undefined;
         url?: string | undefined;
+        context?: string | undefined;
     }, {
         source: string;
-        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "operational" | "growth" | "strategic" | "other";
         period: string;
         guidance: string;
         filingDate: string;
@@ -436,6 +441,7 @@ export declare const EarningsGuidanceSchema: z.ZodObject<{
             max?: number | undefined;
         } | undefined;
         url?: string | undefined;
+        context?: string | undefined;
     }>, "many">;
     timestamp: z.ZodString;
 }, "strip", z.ZodTypeAny, {
@@ -443,7 +449,7 @@ export declare const EarningsGuidanceSchema: z.ZodObject<{
     timestamp: string;
     guidances: {
         source: string;
-        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "operational" | "growth" | "strategic" | "other";
         period: string;
         guidance: string;
         filingDate: string;
@@ -453,6 +459,7 @@ export declare const EarningsGuidanceSchema: z.ZodObject<{
             max?: number | undefined;
         } | undefined;
         url?: string | undefined;
+        context?: string | undefined;
     }[];
     companyName?: string | undefined;
 }, {
@@ -460,7 +467,7 @@ export declare const EarningsGuidanceSchema: z.ZodObject<{
     timestamp: string;
     guidances: {
         source: string;
-        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "other";
+        guidanceType: "revenue" | "earnings" | "margin" | "capex" | "operational" | "growth" | "strategic" | "other";
         period: string;
         guidance: string;
         filingDate: string;
@@ -470,6 +477,7 @@ export declare const EarningsGuidanceSchema: z.ZodObject<{
             max?: number | undefined;
         } | undefined;
         url?: string | undefined;
+        context?: string | undefined;
     }[];
     companyName?: string | undefined;
 }>;

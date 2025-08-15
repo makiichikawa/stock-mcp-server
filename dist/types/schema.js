@@ -101,7 +101,7 @@ exports.AnnualEarningsForecastSchema = zod_1.z.object({
     timestamp: zod_1.z.string(),
 });
 exports.GuidanceItemSchema = zod_1.z.object({
-    guidanceType: zod_1.z.enum(['revenue', 'earnings', 'margin', 'capex', 'other']),
+    guidanceType: zod_1.z.enum(['revenue', 'earnings', 'margin', 'capex', 'operational', 'growth', 'strategic', 'other']),
     period: zod_1.z.string(), // "Q1 2025", "FY2025", etc.
     guidance: zod_1.z.string(), // Actual guidance text
     value: zod_1.z.number().optional(),
@@ -112,6 +112,7 @@ exports.GuidanceItemSchema = zod_1.z.object({
     source: zod_1.z.string(), // Filing type: "10-K", "10-Q", "8-K", "Earnings Call"
     filingDate: zod_1.z.string(),
     url: zod_1.z.string().optional(),
+    context: zod_1.z.string().optional(), // 10-K用の追加コンテキスト情報
 });
 exports.EarningsGuidanceSchema = zod_1.z.object({
     symbol: zod_1.z.string(),

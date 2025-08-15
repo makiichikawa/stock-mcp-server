@@ -109,7 +109,7 @@ export const AnnualEarningsForecastSchema = z.object({
 });
 
 export const GuidanceItemSchema = z.object({
-  guidanceType: z.enum(['revenue', 'earnings', 'margin', 'capex', 'other']),
+  guidanceType: z.enum(['revenue', 'earnings', 'margin', 'capex', 'operational', 'growth', 'strategic', 'other']),
   period: z.string(), // "Q1 2025", "FY2025", etc.
   guidance: z.string(), // Actual guidance text
   value: z.number().optional(),
@@ -120,6 +120,7 @@ export const GuidanceItemSchema = z.object({
   source: z.string(), // Filing type: "10-K", "10-Q", "8-K", "Earnings Call"
   filingDate: z.string(),
   url: z.string().optional(),
+  context: z.string().optional(), // 10-K用の追加コンテキスト情報
 });
 
 export const EarningsGuidanceSchema = z.object({

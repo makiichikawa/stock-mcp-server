@@ -485,4 +485,49 @@ export class StockService {
     return undefined;
   }
 
+  // 10-Kファイリング専用の経営ガイダンスを取得する（年次レポートから詳細なガイダンスを抽出）
+  async get10KEarningsGuidance(input: StockSymbolInput): Promise<EarningsGuidanceResponse> {
+    try {
+      const price = await yahooFinance.quoteSummary(input.symbol, {
+        modules: ['price']
+      });
+
+      const companyName = price.price?.shortName || undefined;
+      const guidances = [];
+
+      // SEC Filingsから10-K専用のガイダンス情報を取得
+      try {
+        const cik = await this.secService.convertTickerToCik(input.symbol);
+        if (cik) {
+          const tenKGuidances = await this.secService.get10KGuidance(cik, 3);
+          
+          for (const guidance of tenKGuidances) {
+            guidances.push({
+              guidanceType: guidance.guidanceType as 'revenue' | 'earnings' | 'margin' | 'capex' | 'operational' | 'growth' | 'strategic' | 'other',
+              period: guidance.fiscalYear,
+              guidance: guidance.guidance,
+              value: this.extractNumericValue(guidance.guidance),
+              valueRange: this.extractValueRange(guidance.guidance),
+              source: '10-K',
+              filingDate: guidance.filingDate,
+              url: `https://www.sec.gov/Archives/edgar/data/${parseInt(cik)}/${guidance.accessionNumber.replace(/-/g, '')}`,
+              context: guidance.context
+            });
+          }
+        }
+      } catch (secError) {
+        console.warn(`Failed to fetch 10-K data for ${input.symbol}:`, secError);
+      }
+
+      return {
+        symbol: input.symbol,
+        companyName,
+        guidances: guidances.slice(0, 25), // 10-Kは詳細なので最大25件
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch 10-K earnings guidance for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
 }

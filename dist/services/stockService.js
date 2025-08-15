@@ -10,6 +10,7 @@ class StockService {
     constructor() {
         this.secService = new secService_js_1.SecService();
     }
+    // 指定されたシンボルの株価情報を取得する
     async getStockPrice(input) {
         try {
             const quote = await yahoo_finance2_1.default.quote(input.symbol);
@@ -31,10 +32,12 @@ class StockService {
             throw new Error(`Failed to fetch stock price for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
+    // 複数の銘柄の株価情報を一括取得する
     async getMultipleStockPrices(symbols) {
         const promises = symbols.map(symbol => this.getStockPrice({ symbol }));
         return Promise.all(promises);
     }
+    // 指定されたシンボルの財務データを取得する（PER、PBR、ROE等の指標を含む）
     async getFinancialData(input) {
         try {
             const quoteSummary = await yahoo_finance2_1.default.quoteSummary(input.symbol, {
@@ -87,6 +90,7 @@ class StockService {
             throw new Error(`Failed to fetch financial data for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
+    // 四半期決算データから黒字転換を分析する（純利益と営業利益の変化を追跡）
     async analyzeProfitabilityTurnAround(input) {
         try {
             const quoteSummary = await yahoo_finance2_1.default.quoteSummary(input.symbol, {
@@ -158,6 +162,7 @@ class StockService {
             throw new Error(`Failed to analyze profitability turnaround for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
+    // 複数銘柄から黒字転換した企業をスクリーニングする（時価総額フィルター付き）
     async screenProfitTurnAroundStocks(input) {
         const results = [];
         for (const symbol of input.symbols) {
@@ -183,6 +188,7 @@ class StockService {
             return b.quarterlyChange - a.quarterlyChange;
         });
     }
+    // 四半期業績予想データを取得する（アナリスト予想とYahoo Financeデータを統合）
     async getQuarterlyEarningsForecast(input) {
         try {
             const quoteSummary = await yahoo_finance2_1.default.quoteSummary(input.symbol, {
@@ -264,6 +270,7 @@ class StockService {
             throw new Error(`Failed to fetch quarterly earnings forecast for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
+    // 年次業績予想データを取得する（最大5年分の予想を提供）
     async getAnnualEarningsForecast(input) {
         try {
             const quoteSummary = await yahoo_finance2_1.default.quoteSummary(input.symbol, {
@@ -312,6 +319,7 @@ class StockService {
             throw new Error(`Failed to fetch annual earnings forecast for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
+    // SEC書類から経営ガイダンスを抽出する（10-K、10-Q、8-Kファイリングを解析）
     async getEarningsGuidance(input) {
         try {
             const price = await yahoo_finance2_1.default.quoteSummary(input.symbol, {
@@ -376,6 +384,7 @@ class StockService {
             throw new Error(`Failed to fetch earnings guidance for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
+    // ガイダンステキストから数値を抽出する（$123 million、12.3%等に対応）
     extractNumericValue(text) {
         // $123.45 million, 12.3%, 等の数値を抽出
         const patterns = [
@@ -402,6 +411,7 @@ class StockService {
         }
         return undefined;
     }
+    // ガイダンステキストから数値範囲を抽出する（"$10-15 million"等に対応）
     extractValueRange(text) {
         // "between $10 million and $15 million", "$10-15 million" 等の範囲を抽出
         const rangePatterns = [
@@ -430,6 +440,48 @@ class StockService {
             }
         }
         return undefined;
+    }
+    // 10-Kファイリング専用の経営ガイダンスを取得する（年次レポートから詳細なガイダンスを抽出）
+    async get10KEarningsGuidance(input) {
+        try {
+            const price = await yahoo_finance2_1.default.quoteSummary(input.symbol, {
+                modules: ['price']
+            });
+            const companyName = price.price?.shortName || undefined;
+            const guidances = [];
+            // SEC Filingsから10-K専用のガイダンス情報を取得
+            try {
+                const cik = await this.secService.convertTickerToCik(input.symbol);
+                if (cik) {
+                    const tenKGuidances = await this.secService.get10KGuidance(cik, 3);
+                    for (const guidance of tenKGuidances) {
+                        guidances.push({
+                            guidanceType: guidance.guidanceType,
+                            period: guidance.fiscalYear,
+                            guidance: guidance.guidance,
+                            value: this.extractNumericValue(guidance.guidance),
+                            valueRange: this.extractValueRange(guidance.guidance),
+                            source: '10-K',
+                            filingDate: guidance.filingDate,
+                            url: `https://www.sec.gov/Archives/edgar/data/${parseInt(cik)}/${guidance.accessionNumber.replace(/-/g, '')}`,
+                            context: guidance.context
+                        });
+                    }
+                }
+            }
+            catch (secError) {
+                console.warn(`Failed to fetch 10-K data for ${input.symbol}:`, secError);
+            }
+            return {
+                symbol: input.symbol,
+                companyName,
+                guidances: guidances.slice(0, 25), // 10-Kは詳細なので最大25件
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            throw new Error(`Failed to fetch 10-K earnings guidance for ${input.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
 }
 exports.StockService = StockService;

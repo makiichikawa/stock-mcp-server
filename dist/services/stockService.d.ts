@@ -12,5 +12,6 @@ export declare class StockService {
     getEarningsGuidance(input: StockSymbolInput): Promise<EarningsGuidanceResponse>;
     private extractNumericValue;
     private extractValueRange;
+    get10KEarningsGuidance(input: StockSymbolInput): Promise<EarningsGuidanceResponse>;
 }
 //# sourceMappingURL=stockService.d.ts.map
