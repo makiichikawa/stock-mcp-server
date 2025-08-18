@@ -130,6 +130,39 @@ export const EarningsGuidanceSchema = z.object({
   timestamp: z.string(),
 });
 
+// IR文書処理用スキーマ
+export const IRDocumentSchema = z.object({
+  symbol: z.string().min(1).max(10),
+  documentUrl: z.string().url(),
+  documentType: z.enum(['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q']),
+  country: z.enum(['US', 'JP']),
+});
+
+export const LocalPDFSchema = z.object({
+  symbol: z.string().min(1).max(10),
+  filePath: z.string().min(1),
+  documentType: z.enum(['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q']),
+  country: z.enum(['US', 'JP']),
+});
+
+export const IRDocumentResponseSchema = z.object({
+  symbol: z.string(),
+  documentType: z.string(),
+  country: z.string(),
+  extractedText: z.string(),
+  metadata: z.object({
+    pageCount: z.number(),
+    processingTime: z.number(),
+    documentSize: z.number(),
+    extractionDate: z.string(),
+  }),
+  summary: z.object({
+    textLength: z.number(),
+    wordCount: z.number(),
+    containsFinancialData: z.boolean(),
+  }).optional(),
+});
+
 export type StockSymbolInput = z.infer<typeof StockSymbolSchema>;
 export type StockPriceResponse = z.infer<typeof StockPriceResponseSchema>;
 export type FinancialDataResponse = z.infer<typeof FinancialDataResponseSchema>;
@@ -139,3 +172,6 @@ export type QuarterlyEarningsForecastResponse = z.infer<typeof QuarterlyEarnings
 export type AnnualEarningsForecastResponse = z.infer<typeof AnnualEarningsForecastSchema>;
 export type EarningsGuidanceResponse = z.infer<typeof EarningsGuidanceSchema>;
 export type ForecastSource = z.infer<typeof ForecastSourceSchema>;
+export type IRDocumentInput = z.infer<typeof IRDocumentSchema>;
+export type LocalPDFInput = z.infer<typeof LocalPDFSchema>;
+export type IRDocumentResponse = z.infer<typeof IRDocumentResponseSchema>;
