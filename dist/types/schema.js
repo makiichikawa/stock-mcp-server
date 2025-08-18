@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IRDocumentResponseSchema = exports.LocalPDFSchema = exports.IRDocumentSchema = exports.EarningsGuidanceSchema = exports.GuidanceItemSchema = exports.AnnualEarningsForecastSchema = exports.AnnualForecastItemSchema = exports.QuarterlyEarningsForecastSchema = exports.QuarterlyForecastItemSchema = exports.ForecastSourceSchema = exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
+exports.IRSummaryResponseSchema = exports.IRSummaryRequestSchema = exports.IRDocumentResponseSchema = exports.LocalPDFSchema = exports.IRDocumentSchema = exports.EarningsGuidanceSchema = exports.GuidanceItemSchema = exports.AnnualEarningsForecastSchema = exports.AnnualForecastItemSchema = exports.QuarterlyEarningsForecastSchema = exports.QuarterlyForecastItemSchema = exports.ForecastSourceSchema = exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
 const zod_1 = require("zod");
 exports.StockSymbolSchema = zod_1.z.object({
     symbol: zod_1.z.string().min(1, 'Stock symbol is required'),
@@ -149,5 +149,36 @@ exports.IRDocumentResponseSchema = zod_1.z.object({
         wordCount: zod_1.z.number(),
         containsFinancialData: zod_1.z.boolean(),
     }).optional(),
+});
+// IR要約機能用スキーマ（要件定義書準拠）
+exports.IRSummaryRequestSchema = zod_1.z.object({
+    symbol: zod_1.z.string().min(1).max(10),
+    companyName: zod_1.z.string().optional(),
+    language: zod_1.z.enum(['ja', 'en']).default('ja'),
+    extractionMode: zod_1.z.enum(['text', 'layout', 'ocr', 'auto']).optional().default('auto'),
+});
+exports.IRSummaryResponseSchema = zod_1.z.object({
+    symbol: zod_1.z.string(),
+    documentType: zod_1.z.string(),
+    processingInfo: zod_1.z.object({
+        pdfType: zod_1.z.enum(['text', 'scanned', 'hybrid']),
+        extractionMethod: zod_1.z.string(),
+        processingTime: zod_1.z.number(),
+        pageCount: zod_1.z.number(),
+    }),
+    summary: zod_1.z.object({
+        executive: zod_1.z.string(), // 3-5行の全文要約
+        financial_highlights: zod_1.z.array(zod_1.z.string()), // 業績ハイライト
+        business_segments: zod_1.z.array(zod_1.z.string()), // 事業セグメント別分析
+        risks: zod_1.z.array(zod_1.z.string()), // リスク要因
+        outlook: zod_1.z.array(zod_1.z.string()), // 今後の見通し
+    }),
+    key_metrics: zod_1.z.object({
+        revenue: zod_1.z.number().optional(),
+        profit: zod_1.z.number().optional(),
+        growth_rate: zod_1.z.number().optional(),
+    }),
+    extractedText: zod_1.z.string().optional(), // デバッグ用
+    timestamp: zod_1.z.string(),
 });
 //# sourceMappingURL=schema.js.map

@@ -592,4 +592,122 @@ export type ForecastSource = z.infer<typeof ForecastSourceSchema>;
 export type IRDocumentInput = z.infer<typeof IRDocumentSchema>;
 export type LocalPDFInput = z.infer<typeof LocalPDFSchema>;
 export type IRDocumentResponse = z.infer<typeof IRDocumentResponseSchema>;
+export declare const IRSummaryRequestSchema: z.ZodObject<{
+    symbol: z.ZodString;
+    companyName: z.ZodOptional<z.ZodString>;
+    language: z.ZodDefault<z.ZodEnum<["ja", "en"]>>;
+    extractionMode: z.ZodDefault<z.ZodOptional<z.ZodEnum<["text", "layout", "ocr", "auto"]>>>;
+}, "strip", z.ZodTypeAny, {
+    symbol: string;
+    language: "ja" | "en";
+    extractionMode: "text" | "layout" | "ocr" | "auto";
+    companyName?: string | undefined;
+}, {
+    symbol: string;
+    companyName?: string | undefined;
+    language?: "ja" | "en" | undefined;
+    extractionMode?: "text" | "layout" | "ocr" | "auto" | undefined;
+}>;
+export declare const IRSummaryResponseSchema: z.ZodObject<{
+    symbol: z.ZodString;
+    documentType: z.ZodString;
+    processingInfo: z.ZodObject<{
+        pdfType: z.ZodEnum<["text", "scanned", "hybrid"]>;
+        extractionMethod: z.ZodString;
+        processingTime: z.ZodNumber;
+        pageCount: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        pageCount: number;
+        processingTime: number;
+        pdfType: "text" | "scanned" | "hybrid";
+        extractionMethod: string;
+    }, {
+        pageCount: number;
+        processingTime: number;
+        pdfType: "text" | "scanned" | "hybrid";
+        extractionMethod: string;
+    }>;
+    summary: z.ZodObject<{
+        executive: z.ZodString;
+        financial_highlights: z.ZodArray<z.ZodString, "many">;
+        business_segments: z.ZodArray<z.ZodString, "many">;
+        risks: z.ZodArray<z.ZodString, "many">;
+        outlook: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        executive: string;
+        financial_highlights: string[];
+        business_segments: string[];
+        risks: string[];
+        outlook: string[];
+    }, {
+        executive: string;
+        financial_highlights: string[];
+        business_segments: string[];
+        risks: string[];
+        outlook: string[];
+    }>;
+    key_metrics: z.ZodObject<{
+        revenue: z.ZodOptional<z.ZodNumber>;
+        profit: z.ZodOptional<z.ZodNumber>;
+        growth_rate: z.ZodOptional<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        revenue?: number | undefined;
+        profit?: number | undefined;
+        growth_rate?: number | undefined;
+    }, {
+        revenue?: number | undefined;
+        profit?: number | undefined;
+        growth_rate?: number | undefined;
+    }>;
+    extractedText: z.ZodOptional<z.ZodString>;
+    timestamp: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    symbol: string;
+    timestamp: string;
+    documentType: string;
+    summary: {
+        executive: string;
+        financial_highlights: string[];
+        business_segments: string[];
+        risks: string[];
+        outlook: string[];
+    };
+    processingInfo: {
+        pageCount: number;
+        processingTime: number;
+        pdfType: "text" | "scanned" | "hybrid";
+        extractionMethod: string;
+    };
+    key_metrics: {
+        revenue?: number | undefined;
+        profit?: number | undefined;
+        growth_rate?: number | undefined;
+    };
+    extractedText?: string | undefined;
+}, {
+    symbol: string;
+    timestamp: string;
+    documentType: string;
+    summary: {
+        executive: string;
+        financial_highlights: string[];
+        business_segments: string[];
+        risks: string[];
+        outlook: string[];
+    };
+    processingInfo: {
+        pageCount: number;
+        processingTime: number;
+        pdfType: "text" | "scanned" | "hybrid";
+        extractionMethod: string;
+    };
+    key_metrics: {
+        revenue?: number | undefined;
+        profit?: number | undefined;
+        growth_rate?: number | undefined;
+    };
+    extractedText?: string | undefined;
+}>;
+export type IRSummaryRequest = z.infer<typeof IRSummaryRequestSchema>;
+export type IRSummaryResponse = z.infer<typeof IRSummaryResponseSchema>;
 //# sourceMappingURL=schema.d.ts.map

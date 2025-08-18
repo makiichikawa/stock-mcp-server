@@ -6,6 +6,7 @@ const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
 const stockService_1 = require("./services/stockService");
 const irService_1 = require("./services/irService");
+const irSummaryService_1 = require("./services/irSummaryService");
 const schema_1 = require("./types/schema");
 const server = new index_js_1.Server({
     name: 'stock-mcp-server',
@@ -17,6 +18,7 @@ const server = new index_js_1.Server({
 });
 const stockService = new stockService_1.StockService();
 const irService = new irService_1.IRService();
+const irSummaryService = new irSummaryService_1.IRSummaryService();
 server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
     return {
         tools: [
@@ -216,6 +218,29 @@ server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
                     required: ['symbol', 'filePath', 'documentType', 'country'],
                 },
             },
+            {
+                name: 'summarize_ir_information',
+                description: 'Generate a comprehensive summary of IR information from available documents',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        symbol: {
+                            type: 'string',
+                            description: 'Stock symbol (e.g., AAPL, 7203, 6758)',
+                        },
+                        companyName: {
+                            type: 'string',
+                            description: 'Company name (optional)',
+                        },
+                        language: {
+                            type: 'string',
+                            enum: ['ja', 'en'],
+                            description: 'Summary language (ja for Japanese, en for English)',
+                        },
+                    },
+                    required: ['symbol'],
+                },
+            },
         ],
     };
 });
@@ -348,6 +373,18 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
         if (name === 'extract_local_pdf') {
             const validatedArgs = schema_1.LocalPDFSchema.parse(args);
             const result = await irService.extractFromLocalPDF(validatedArgs.filePath, validatedArgs.symbol, validatedArgs.documentType, validatedArgs.country);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+            };
+        }
+        if (name === 'summarize_ir_information') {
+            const validatedArgs = schema_1.IRSummaryRequestSchema.parse(args);
+            const result = await irSummaryService.generateIRSummary(validatedArgs);
             return {
                 content: [
                     {

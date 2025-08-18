@@ -176,44 +176,37 @@ export type IRDocumentInput = z.infer<typeof IRDocumentSchema>;
 export type LocalPDFInput = z.infer<typeof LocalPDFSchema>;
 export type IRDocumentResponse = z.infer<typeof IRDocumentResponseSchema>;
 
-// IR要約機能用スキーマ
+// IR要約機能用スキーマ（要件定義書準拠）
 export const IRSummaryRequestSchema = z.object({
   symbol: z.string().min(1).max(10),
   companyName: z.string().optional(),
   language: z.enum(['ja', 'en']).default('ja'),
+  extractionMode: z.enum(['text', 'layout', 'ocr', 'auto']).optional().default('auto'),
 });
 
 export const IRSummaryResponseSchema = z.object({
   symbol: z.string(),
-  companyName: z.string(),
-  language: z.string(),
-  summary: z.object({
-    overview: z.string(),
-    financialHighlights: z.object({
-      revenue: z.string().optional(),
-      profit: z.string().optional(),
-      operatingIncome: z.string().optional(),
-      netIncome: z.string().optional(),
-      keyMetrics: z.array(z.string()).optional(),
-    }),
-    businessSegments: z.array(z.object({
-      name: z.string(),
-      performance: z.string(),
-      outlook: z.string().optional(),
-    })).optional(),
-    outlook: z.object({
-      guidance: z.string().optional(),
-      risks: z.array(z.string()).optional(),
-      opportunities: z.array(z.string()).optional(),
-    }).optional(),
-    keyMessages: z.array(z.string()),
-  }),
-  sources: z.array(z.object({
-    documentType: z.string(),
-    extractionDate: z.string(),
+  documentType: z.string(),
+  processingInfo: z.object({
+    pdfType: z.enum(['text', 'scanned', 'hybrid']),
+    extractionMethod: z.string(),
+    processingTime: z.number(),
     pageCount: z.number(),
-  })),
-  generatedAt: z.string(),
+  }),
+  summary: z.object({
+    executive: z.string(), // 3-5行の全文要約
+    financial_highlights: z.array(z.string()), // 業績ハイライト
+    business_segments: z.array(z.string()), // 事業セグメント別分析
+    risks: z.array(z.string()), // リスク要因
+    outlook: z.array(z.string()), // 今後の見通し
+  }),
+  key_metrics: z.object({
+    revenue: z.number().optional(),
+    profit: z.number().optional(),
+    growth_rate: z.number().optional(),
+  }),
+  extractedText: z.string().optional(), // デバッグ用
+  timestamp: z.string(),
 });
 
 export type IRSummaryRequest = z.infer<typeof IRSummaryRequestSchema>;
