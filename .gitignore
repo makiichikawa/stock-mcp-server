@@ -9,4 +9,5 @@ tests/
 debug/
 
 # Local PDF files
-local_pdf/
+local_pdf/*
+!local_pdf/README.md
