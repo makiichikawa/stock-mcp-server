@@ -481,6 +481,105 @@ export declare const EarningsGuidanceSchema: z.ZodObject<{
     }[];
     companyName?: string | undefined;
 }>;
+export declare const IRDocumentSchema: z.ZodObject<{
+    symbol: z.ZodString;
+    documentUrl: z.ZodString;
+    documentType: z.ZodEnum<["earnings_presentation", "annual_report", "quarterly_report", "10-K", "10-Q"]>;
+    country: z.ZodEnum<["US", "JP"]>;
+}, "strip", z.ZodTypeAny, {
+    symbol: string;
+    documentUrl: string;
+    documentType: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q";
+    country: "US" | "JP";
+}, {
+    symbol: string;
+    documentUrl: string;
+    documentType: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q";
+    country: "US" | "JP";
+}>;
+export declare const LocalPDFSchema: z.ZodObject<{
+    symbol: z.ZodString;
+    filePath: z.ZodString;
+    documentType: z.ZodEnum<["earnings_presentation", "annual_report", "quarterly_report", "10-K", "10-Q"]>;
+    country: z.ZodEnum<["US", "JP"]>;
+}, "strip", z.ZodTypeAny, {
+    symbol: string;
+    documentType: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q";
+    country: "US" | "JP";
+    filePath: string;
+}, {
+    symbol: string;
+    documentType: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q";
+    country: "US" | "JP";
+    filePath: string;
+}>;
+export declare const IRDocumentResponseSchema: z.ZodObject<{
+    symbol: z.ZodString;
+    documentType: z.ZodString;
+    country: z.ZodString;
+    extractedText: z.ZodString;
+    metadata: z.ZodObject<{
+        pageCount: z.ZodNumber;
+        processingTime: z.ZodNumber;
+        documentSize: z.ZodNumber;
+        extractionDate: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        pageCount: number;
+        processingTime: number;
+        documentSize: number;
+        extractionDate: string;
+    }, {
+        pageCount: number;
+        processingTime: number;
+        documentSize: number;
+        extractionDate: string;
+    }>;
+    summary: z.ZodOptional<z.ZodObject<{
+        textLength: z.ZodNumber;
+        wordCount: z.ZodNumber;
+        containsFinancialData: z.ZodBoolean;
+    }, "strip", z.ZodTypeAny, {
+        textLength: number;
+        wordCount: number;
+        containsFinancialData: boolean;
+    }, {
+        textLength: number;
+        wordCount: number;
+        containsFinancialData: boolean;
+    }>>;
+}, "strip", z.ZodTypeAny, {
+    symbol: string;
+    documentType: string;
+    country: string;
+    extractedText: string;
+    metadata: {
+        pageCount: number;
+        processingTime: number;
+        documentSize: number;
+        extractionDate: string;
+    };
+    summary?: {
+        textLength: number;
+        wordCount: number;
+        containsFinancialData: boolean;
+    } | undefined;
+}, {
+    symbol: string;
+    documentType: string;
+    country: string;
+    extractedText: string;
+    metadata: {
+        pageCount: number;
+        processingTime: number;
+        documentSize: number;
+        extractionDate: string;
+    };
+    summary?: {
+        textLength: number;
+        wordCount: number;
+        containsFinancialData: boolean;
+    } | undefined;
+}>;
 export type StockSymbolInput = z.infer<typeof StockSymbolSchema>;
 export type StockPriceResponse = z.infer<typeof StockPriceResponseSchema>;
 export type FinancialDataResponse = z.infer<typeof FinancialDataResponseSchema>;
@@ -490,4 +589,7 @@ export type QuarterlyEarningsForecastResponse = z.infer<typeof QuarterlyEarnings
 export type AnnualEarningsForecastResponse = z.infer<typeof AnnualEarningsForecastSchema>;
 export type EarningsGuidanceResponse = z.infer<typeof EarningsGuidanceSchema>;
 export type ForecastSource = z.infer<typeof ForecastSourceSchema>;
+export type IRDocumentInput = z.infer<typeof IRDocumentSchema>;
+export type LocalPDFInput = z.infer<typeof LocalPDFSchema>;
+export type IRDocumentResponse = z.infer<typeof IRDocumentResponseSchema>;
 //# sourceMappingURL=schema.d.ts.map

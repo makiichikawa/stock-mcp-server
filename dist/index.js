@@ -5,6 +5,7 @@ const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
 const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
 const stockService_1 = require("./services/stockService");
+const irService_1 = require("./services/irService");
 const schema_1 = require("./types/schema");
 const server = new index_js_1.Server({
     name: 'stock-mcp-server',
@@ -15,6 +16,7 @@ const server = new index_js_1.Server({
     },
 });
 const stockService = new stockService_1.StockService();
+const irService = new irService_1.IRService();
 server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
     return {
         tools: [
@@ -158,6 +160,62 @@ server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
                     required: ['symbol'],
                 },
             },
+            {
+                name: 'extract_ir_document',
+                description: 'Download and extract text from IR documents (PDF) from a URL',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        symbol: {
+                            type: 'string',
+                            description: 'Stock symbol (e.g., AAPL, 7203)',
+                        },
+                        documentUrl: {
+                            type: 'string',
+                            description: 'URL of the PDF document to extract',
+                        },
+                        documentType: {
+                            type: 'string',
+                            enum: ['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q'],
+                            description: 'Type of IR document',
+                        },
+                        country: {
+                            type: 'string',
+                            enum: ['US', 'JP'],
+                            description: 'Country of the company (US or JP)',
+                        },
+                    },
+                    required: ['symbol', 'documentUrl', 'documentType', 'country'],
+                },
+            },
+            {
+                name: 'extract_local_pdf',
+                description: 'Extract text from a local PDF file',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        symbol: {
+                            type: 'string',
+                            description: 'Stock symbol (e.g., AAPL, 7203)',
+                        },
+                        filePath: {
+                            type: 'string',
+                            description: 'Local file path to the PDF document',
+                        },
+                        documentType: {
+                            type: 'string',
+                            enum: ['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q'],
+                            description: 'Type of IR document',
+                        },
+                        country: {
+                            type: 'string',
+                            enum: ['US', 'JP'],
+                            description: 'Country of the company (US or JP)',
+                        },
+                    },
+                    required: ['symbol', 'filePath', 'documentType', 'country'],
+                },
+            },
         ],
     };
 });
@@ -266,6 +324,30 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
         if (name === 'get_10k_earnings_guidance') {
             const validatedArgs = schema_1.StockSymbolSchema.parse(args);
             const result = await stockService.get10KEarningsGuidance(validatedArgs);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+            };
+        }
+        if (name === 'extract_ir_document') {
+            const validatedArgs = schema_1.IRDocumentSchema.parse(args);
+            const result = await irService.downloadAndExtractPDF(validatedArgs);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+            };
+        }
+        if (name === 'extract_local_pdf') {
+            const validatedArgs = schema_1.LocalPDFSchema.parse(args);
+            const result = await irService.extractFromLocalPDF(validatedArgs.filePath, validatedArgs.symbol, validatedArgs.documentType, validatedArgs.country);
             return {
                 content: [
                     {

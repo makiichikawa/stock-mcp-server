@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EarningsGuidanceSchema = exports.GuidanceItemSchema = exports.AnnualEarningsForecastSchema = exports.AnnualForecastItemSchema = exports.QuarterlyEarningsForecastSchema = exports.QuarterlyForecastItemSchema = exports.ForecastSourceSchema = exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
+exports.IRDocumentResponseSchema = exports.LocalPDFSchema = exports.IRDocumentSchema = exports.EarningsGuidanceSchema = exports.GuidanceItemSchema = exports.AnnualEarningsForecastSchema = exports.AnnualForecastItemSchema = exports.QuarterlyEarningsForecastSchema = exports.QuarterlyForecastItemSchema = exports.ForecastSourceSchema = exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
 const zod_1 = require("zod");
 exports.StockSymbolSchema = zod_1.z.object({
     symbol: zod_1.z.string().min(1, 'Stock symbol is required'),
@@ -119,5 +119,35 @@ exports.EarningsGuidanceSchema = zod_1.z.object({
     companyName: zod_1.z.string().optional(),
     guidances: zod_1.z.array(exports.GuidanceItemSchema),
     timestamp: zod_1.z.string(),
+});
+// IR文書処理用スキーマ
+exports.IRDocumentSchema = zod_1.z.object({
+    symbol: zod_1.z.string().min(1).max(10),
+    documentUrl: zod_1.z.string().url(),
+    documentType: zod_1.z.enum(['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q']),
+    country: zod_1.z.enum(['US', 'JP']),
+});
+exports.LocalPDFSchema = zod_1.z.object({
+    symbol: zod_1.z.string().min(1).max(10),
+    filePath: zod_1.z.string().min(1),
+    documentType: zod_1.z.enum(['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q']),
+    country: zod_1.z.enum(['US', 'JP']),
+});
+exports.IRDocumentResponseSchema = zod_1.z.object({
+    symbol: zod_1.z.string(),
+    documentType: zod_1.z.string(),
+    country: zod_1.z.string(),
+    extractedText: zod_1.z.string(),
+    metadata: zod_1.z.object({
+        pageCount: zod_1.z.number(),
+        processingTime: zod_1.z.number(),
+        documentSize: zod_1.z.number(),
+        extractionDate: zod_1.z.string(),
+    }),
+    summary: zod_1.z.object({
+        textLength: zod_1.z.number(),
+        wordCount: zod_1.z.number(),
+        containsFinancialData: zod_1.z.boolean(),
+    }).optional(),
 });
 //# sourceMappingURL=schema.js.map

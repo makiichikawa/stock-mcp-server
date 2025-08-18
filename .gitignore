@@ -7,3 +7,6 @@ dist/
 # Test and debug files
 tests/
 debug/
+
+# Local PDF files
+local_pdf/
