@@ -175,3 +175,46 @@ export type ForecastSource = z.infer<typeof ForecastSourceSchema>;
 export type IRDocumentInput = z.infer<typeof IRDocumentSchema>;
 export type LocalPDFInput = z.infer<typeof LocalPDFSchema>;
 export type IRDocumentResponse = z.infer<typeof IRDocumentResponseSchema>;
+
+// IR要約機能用スキーマ
+export const IRSummaryRequestSchema = z.object({
+  symbol: z.string().min(1).max(10),
+  companyName: z.string().optional(),
+  language: z.enum(['ja', 'en']).default('ja'),
+});
+
+export const IRSummaryResponseSchema = z.object({
+  symbol: z.string(),
+  companyName: z.string(),
+  language: z.string(),
+  summary: z.object({
+    overview: z.string(),
+    financialHighlights: z.object({
+      revenue: z.string().optional(),
+      profit: z.string().optional(),
+      operatingIncome: z.string().optional(),
+      netIncome: z.string().optional(),
+      keyMetrics: z.array(z.string()).optional(),
+    }),
+    businessSegments: z.array(z.object({
+      name: z.string(),
+      performance: z.string(),
+      outlook: z.string().optional(),
+    })).optional(),
+    outlook: z.object({
+      guidance: z.string().optional(),
+      risks: z.array(z.string()).optional(),
+      opportunities: z.array(z.string()).optional(),
+    }).optional(),
+    keyMessages: z.array(z.string()),
+  }),
+  sources: z.array(z.object({
+    documentType: z.string(),
+    extractionDate: z.string(),
+    pageCount: z.number(),
+  })),
+  generatedAt: z.string(),
+});
+
+export type IRSummaryRequest = z.infer<typeof IRSummaryRequestSchema>;
+export type IRSummaryResponse = z.infer<typeof IRSummaryResponseSchema>;
