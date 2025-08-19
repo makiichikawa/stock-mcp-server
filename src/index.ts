@@ -9,7 +9,7 @@ import {
 import { StockService } from './services/stockService';
 import { IRService } from './services/irService';
 import { IRSummaryService } from './services/irSummaryService';
-import { StockSymbolSchema, StockScreenerSchema, IRDocumentSchema, LocalPDFSchema, IRSummaryRequestSchema } from './types/schema';
+import { StockSymbolSchema, StockScreenerSchema, LocalPDFSchema, IRSummaryRequestSchema } from './types/schema';
 
 const server = new Server(
   {
@@ -168,34 +168,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: ['symbol'],
-        },
-      },
-      {
-        name: 'extract_ir_document',
-        description: 'Download and extract text from IR documents (PDF) from a URL',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            symbol: {
-              type: 'string',
-              description: 'Stock symbol (e.g., AAPL, 7203)',
-            },
-            documentUrl: {
-              type: 'string',
-              description: 'URL of the PDF document to extract',
-            },
-            documentType: {
-              type: 'string',
-              enum: ['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q'],
-              description: 'Type of IR document',
-            },
-            country: {
-              type: 'string',
-              enum: ['US', 'JP'],
-              description: 'Country of the company (US or JP)',
-            },
-          },
-          required: ['symbol', 'documentUrl', 'documentType', 'country'],
         },
       },
       {
@@ -387,19 +359,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
-    if (name === 'extract_ir_document') {
-      const validatedArgs = IRDocumentSchema.parse(args);
-      const result = await irService.downloadAndExtractPDF(validatedArgs);
-      
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-      };
-    }
 
     if (name === 'extract_local_pdf') {
       const validatedArgs = LocalPDFSchema.parse(args);

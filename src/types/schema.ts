@@ -131,12 +131,6 @@ export const EarningsGuidanceSchema = z.object({
 });
 
 // IR文書処理用スキーマ
-export const IRDocumentSchema = z.object({
-  symbol: z.string().min(1).max(10),
-  documentUrl: z.string().url(),
-  documentType: z.enum(['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q']),
-  country: z.enum(['US', 'JP']),
-});
 
 export const LocalPDFSchema = z.object({
   symbol: z.string().min(1).max(10),
@@ -172,7 +166,6 @@ export type QuarterlyEarningsForecastResponse = z.infer<typeof QuarterlyEarnings
 export type AnnualEarningsForecastResponse = z.infer<typeof AnnualEarningsForecastSchema>;
 export type EarningsGuidanceResponse = z.infer<typeof EarningsGuidanceSchema>;
 export type ForecastSource = z.infer<typeof ForecastSourceSchema>;
-export type IRDocumentInput = z.infer<typeof IRDocumentSchema>;
 export type LocalPDFInput = z.infer<typeof LocalPDFSchema>;
 export type IRDocumentResponse = z.infer<typeof IRDocumentResponseSchema>;
 

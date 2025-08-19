@@ -3,14 +3,6 @@ import { IRService } from './irService';
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface TestCaseData {
-  symbol: string;
-  name: string;
-  documentUrl: string;
-  documentType: string;
-  country: string;
-  description: string;
-}
 
 export class IRSummaryService {
   private irService: IRService;
@@ -53,11 +45,8 @@ export class IRSummaryService {
   private async collectIRDocuments(symbol: string): Promise<Array<any>> {
     const documents: Array<any> = [];
     
-    // 1. ローカルPDFファイルをチェック
+    // ローカルPDFファイルのみをチェック
     await this.collectLocalDocuments(symbol, documents);
-    
-    // 2. 事前定義されたテストケースからIR情報を取得
-    await this.collectRemoteDocuments(symbol, documents);
 
     console.log(`総計 ${documents.length} 件のIR文書を収集`);
     return documents;
@@ -112,32 +101,6 @@ export class IRSummaryService {
     }
   }
 
-  private async collectRemoteDocuments(symbol: string, documents: Array<any>): Promise<void> {
-    const testCases = this.getTestCasesForSymbol(symbol);
-    
-    if (testCases.length === 0) {
-      console.log(`銘柄 ${symbol} に対応する事前定義URLが見つかりません`);
-      return;
-    }
-
-    console.log(`リモートURL検索: ${testCases.length}件のテストケース`);
-
-    for (const testCase of testCases) {
-      try {
-        console.log(`リモートPDF処理中: ${testCase.description}`);
-        const result = await this.irService.downloadAndExtractPDF({
-          symbol: testCase.symbol,
-          documentUrl: testCase.documentUrl,
-          documentType: testCase.documentType as any,
-          country: testCase.country as any,
-        });
-        documents.push(result);
-        console.log(`✓ リモートPDF処理成功: ${testCase.description}`);
-      } catch (error) {
-        console.warn(`✗ リモートPDF処理失敗 ${testCase.description}:`, error);
-      }
-    }
-  }
 
   private async analyzeAndSummarize(documents: Array<any>, request: IRSummaryRequest): Promise<any> {
     console.log('IR文書分析・要約処理開始');
@@ -650,25 +613,4 @@ export class IRSummaryService {
     return /^\d+$/.test(symbol) ? `${symbol} 株式会社` : `${symbol} Inc.`;
   }
 
-  private getTestCasesForSymbol(symbol: string): TestCaseData[] {
-    // 既存のテストケースデータを読み込み
-    try {
-      const testCasesPath = path.join(process.cwd(), 'tests', 'fixtures', 'japanese-stocks.js');
-      if (fs.existsSync(testCasesPath)) {
-        delete require.cache[require.resolve(testCasesPath)];
-        const testData = require(testCasesPath);
-        
-        const allCases = [
-          ...(testData.JAPANESE_STOCK_TEST_CASES || []),
-          ...(testData.AMERICAN_STOCK_TEST_CASES || [])
-        ];
-        
-        return allCases.filter((testCase: TestCaseData) => testCase.symbol === symbol);
-      }
-    } catch (error) {
-      console.warn('テストケースファイルの読み込みに失敗:', error);
-    }
-    
-    return [];
-  }
 }
