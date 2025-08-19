@@ -8,8 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { StockService } from './services/stockService';
 import { IRService } from './services/irService';
-import { IRSummaryService } from './services/irSummaryService';
-import { StockSymbolSchema, StockScreenerSchema, LocalPDFSchema, IRSummaryRequestSchema } from './types/schema';
+import { StockSymbolSchema, StockScreenerSchema, LocalPDFSchema } from './types/schema';
 
 const server = new Server(
   {
@@ -25,7 +24,6 @@ const server = new Server(
 
 const stockService = new StockService();
 const irService = new IRService();
-const irSummaryService = new IRSummaryService();
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -198,29 +196,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['symbol', 'filePath', 'documentType', 'country'],
         },
       },
-      {
-        name: 'summarize_ir_information',
-        description: 'Generate a comprehensive summary of IR information from available documents',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            symbol: {
-              type: 'string',
-              description: 'Stock symbol (e.g., AAPL, 7203, 6758)',
-            },
-            companyName: {
-              type: 'string',
-              description: 'Company name (optional)',
-            },
-            language: {
-              type: 'string',
-              enum: ['ja', 'en'],
-              description: 'Summary language (ja for Japanese, en for English)',
-            },
-          },
-          required: ['symbol'],
-        },
-      },
     ],
   };
 });
@@ -379,19 +354,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
-    if (name === 'summarize_ir_information') {
-      const validatedArgs = IRSummaryRequestSchema.parse(args);
-      const result = await irSummaryService.generateIRSummary(validatedArgs);
-      
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-      };
-    }
     
     throw new Error(`Unknown tool: ${name}`);
   } catch (error) {

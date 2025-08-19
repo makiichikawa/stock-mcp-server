@@ -107,36 +107,26 @@ export class IRSummaryService {
     
     const combinedText = documents.map(doc => doc.extractedText).join('\n\n');
     const totalTextLength = combinedText.length;
+    const documentType = this.determineMainDocumentType(documents);
     
     console.log(`結合テキスト長: ${totalTextLength.toLocaleString()} 文字`);
+    console.log(`文書タイプ: ${documentType}`);
     
     // 3-5行の全体要約（executive）を生成
     const executive = this.generateExecutiveSummary(combinedText, request.language);
     console.log('全体要約生成完了');
     
-    // 財務ハイライトを配列形式で抽出
-    const financialHighlights = this.extractFinancialHighlightsArray(combinedText, request.language);
-    console.log(`財務ハイライト抽出完了: ${financialHighlights.length}件`);
-    
-    // 事業セグメント情報を配列形式で抽出
-    const businessSegments = this.extractBusinessSegmentsArray(combinedText, request.language);
-    console.log(`事業セグメント抽出完了: ${businessSegments.length}件`);
-    
-    // リスク要因を抽出
-    const risks = this.extractRisksArray(combinedText, request.language);
-    console.log(`リスク要因抽出完了: ${risks.length}件`);
-    
-    // 見通し・ガイダンスを配列形式で抽出
-    const outlook = this.extractOutlookArray(combinedText, request.language);
-    console.log(`見通し抽出完了: ${outlook.length}件`);
-
-    return {
-      executive,
-      financial_highlights: financialHighlights,
-      business_segments: businessSegments,
-      risks,
-      outlook,
-    };
+    // 文書タイプに応じて異なる要約構造を生成
+    if (this.isQuarterlyDocument(documentType)) {
+      console.log('決算短信用要約を生成中...');
+      return this.generateQuarterlyEarningSummary(combinedText, executive, request.language);
+    } else if (this.isAnnualDocument(documentType)) {
+      console.log('有価証券報告書用要約を生成中...');
+      return this.generateAnnualReportSummary(combinedText, executive, request.language);
+    } else {
+      console.log('デフォルト（決算短信）として処理中...');
+      return this.generateQuarterlyEarningSummary(combinedText, executive, request.language);
+    }
   }
 
   private generateExecutiveSummary(text: string, language: string = 'ja'): string {
@@ -177,319 +167,11 @@ export class IRSummaryService {
       : `Detailed information about current period performance and business overview is included. ${meaningfulText.substring(0, 200)}... and other important points are reported.`;
   }
 
-  private extractFinancialHighlightsArray(text: string, language: string = 'ja'): string[] {
-    const highlights: string[] = [];
 
-    // 売上高情報を抽出
-    const revenuePatterns = language === 'ja' 
-      ? [
-          /(?:売上高|売上収益)[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]{0,100}/gi,
-          /Total Revenue[：:\s]*\$?\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million)[^\n]{0,100}/gi
-        ]
-      : [
-          /Revenue[：:\s]*\$?\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million)[^\n]{0,100}/gi,
-          /Net sales[：:\s]*\$?\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million)[^\n]{0,100}/gi
-        ];
-    
-    for (const pattern of revenuePatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 2)) {
-        if (match[0] && match[0].trim().length > 10) {
-          highlights.push(match[0].trim());
-        }
-      }
-    }
 
-    // 利益情報を抽出
-    const profitPatterns = language === 'ja'
-      ? [
-          /(?:営業利益|純利益|当期純利益)[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]{0,100}/gi,
-          /(?:Operating income|Net income)[：:\s]*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million)[^\n]{0,100}/gi
-        ]
-      : [
-          /(?:Operating income|Net income|Profit)[：:\s]*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million)[^\n]{0,100}/gi,
-          /(?:Earnings|Income)[：:\s]*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million)[^\n]{0,100}/gi
-        ];
-    
-    for (const pattern of profitPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 2)) {
-        if (match[0] && match[0].trim().length > 10) {
-          highlights.push(match[0].trim());
-        }
-      }
-    }
 
-    // 成長率情報を抽出
-    const growthPatterns = language === 'ja'
-      ? [
-          /(?:前年同期比|前年比|成長率)[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)[^\n]{0,80}/gi,
-          /(?:up|increased?|growth)[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)[^\n]{0,80}/gi
-        ]
-      : [
-          /(?:year-over-year|YoY|growth)[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)[^\n]{0,80}/gi,
-          /(?:increased?|up|growth)[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)[^\n]{0,80}/gi
-        ];
-    
-    for (const pattern of growthPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 3)) {
-        if (match[0] && match[0].trim().length > 8) {
-          highlights.push(match[0].trim());
-        }
-      }
-    }
 
-    return highlights.slice(0, 8); // 最大8項目
-  }
 
-  private extractBusinessSegmentsArray(text: string, language: string = 'ja'): string[] {
-    const segments: string[] = [];
-    
-    const segmentPatterns = language === 'ja'
-      ? [
-          /([^\n]*(?:事業|セグメント|部門|分野)[^\n]{20,300})/gi,
-          /([^\n]*(?:ゲーム|音楽|エレクトロニクス|金融)[^\n]{20,300})/gi
-        ]
-      : [
-          /([^\n]*(?:segment|business|division|sector)[^\n]{20,300})/gi,
-          /([^\n]*(?:iPhone|iPad|Mac|Services|Wearables|Auto|Point-of-Sale)[^\n]{20,300})/gi
-        ];
-    
-    for (const pattern of segmentPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 6)) {
-        if (match[1] && match[1].trim().length > 15) {
-          segments.push(match[1].trim());
-        }
-      }
-    }
-
-    return segments.slice(0, 8); // 最大8セグメント
-  }
-
-  private extractRisksArray(text: string, language: string = 'ja'): string[] {
-    const risks: string[] = [];
-    
-    const riskPatterns = language === 'ja'
-      ? [
-          /([^\n]*(?:リスク|課題|懸念|不安要素|影響)[^\n]{20,300})/gi,
-          /([^\n]*(?:不確実性|変動|障害)[^\n]{20,300})/gi
-        ]
-      : [
-          /([^\n]*(?:risk|challenge|concern|uncertainty|headwind)[^\n]{20,300})/gi,
-          /([^\n]*(?:impact|volatility|threat|obstacle)[^\n]{20,300})/gi
-        ];
-    
-    for (const pattern of riskPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 5)) {
-        if (match[1] && match[1].trim().length > 15) {
-          risks.push(match[1].trim());
-        }
-      }
-    }
-
-    return risks.slice(0, 6); // 最大6リスク
-  }
-
-  private extractOutlookArray(text: string, language: string = 'ja'): string[] {
-    const outlook: string[] = [];
-
-    // ガイダンス・見通し情報を抽出
-    const outlookPatterns = language === 'ja'
-      ? [
-          /([^\n]*(?:業績予想|見通し|ガイダンス|今後の方針)[^\n]{30,300})/gi,
-          /([^\n]*(?:2025|2026).*?(?:予想|見込み|見通し)[^\n]{30,300})/gi,
-          /([^\n]*(?:成長|戦略|投資|拡大|展開)[^\n]{30,300})/gi
-        ]
-      : [
-          /([^\n]*(?:guidance|outlook|forecast|projection)[^\n]{30,300})/gi,
-          /([^\n]*(?:2025|2026).*?(?:outlook|guidance|forecast)[^\n]{30,300})/gi,
-          /([^\n]*(?:growth|strategy|investment|expansion)[^\n]{30,300})/gi
-        ];
-    
-    for (const pattern of outlookPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 4)) {
-        if (match[1] && match[1].trim().length > 25) {
-          outlook.push(match[1].trim());
-        }
-      }
-    }
-
-    return outlook.slice(0, 6); // 最大6項目
-  }
-
-  private extractFinancialHighlights(text: string, language: string = 'ja'): any {
-    const highlights: any = {
-      keyMetrics: [],
-    };
-
-    // 売上高/売上収益を抽出
-    const revenuePatterns = language === 'ja' 
-      ? [
-          /売上高[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
-          /売上収益[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
-          /Revenue[：:\s]*([¥$€])?\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million|thousand)?/gi
-        ]
-      : [
-          /Revenue[：:\s]*([¥$€])?\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million|thousand)?/gi,
-          /Net sales[：:\s]*([¥$€])?\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million|thousand)?/gi
-        ];
-    
-    for (const pattern of revenuePatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      if (matches.length > 0) {
-        highlights.revenue = matches[0][0];
-        break;
-      }
-    }
-
-    // 利益情報を抽出（営業利益、当期純利益）
-    const profitPatterns = language === 'ja'
-      ? [
-          /営業利益[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
-          /当期純利益[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
-          /純利益[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi
-        ]
-      : [
-          /Operating income[：:\s]*([¥$€])?\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million|thousand)?/gi,
-          /Net income[：:\s]*([¥$€])?\s*([0-9,]+(?:\.[0-9]+)?)\s*(?:billion|million|thousand)?/gi
-        ];
-    
-    for (const pattern of profitPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      if (matches.length > 0) {
-        if (!highlights.operatingIncome && pattern.toString().includes('営業利益|Operating income')) {
-          highlights.operatingIncome = matches[0][0];
-        }
-        if (!highlights.netIncome && pattern.toString().includes('純利益|Net income')) {
-          highlights.netIncome = matches[0][0];
-        }
-      }
-    }
-
-    // 成長率や変化率を抽出
-    const metricPatterns = language === 'ja'
-      ? [
-          /前年同期比[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)/gi,
-          /前年比[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)/gi,
-          /成長率[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)/gi,
-          /増減[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)/gi
-        ]
-      : [
-          /year-over-year[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)/gi,
-          /YoY[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)/gi,
-          /growth rate[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?%)/gi
-        ];
-    
-    for (const pattern of metricPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      if (matches.length > 0) {
-        highlights.keyMetrics.push(...matches.slice(0, 3).map(m => m[0]));
-      }
-    }
-
-    return highlights;
-  }
-
-  private extractBusinessSegments(text: string, language: string = 'ja'): any[] {
-    const segments: any[] = [];
-    
-    const segmentPatterns = language === 'ja'
-      ? [
-          /([^\n]*(?:事業|セグメント|部門|分野))[：:\s]*([^\n]{20,200})/gi,
-          /([^\n]*(?:Game|Music|Pictures|Electronics|Financial))[：:\s]*([^\n]{20,200})/gi
-        ]
-      : [
-          /([^\n]*(?:segment|business|division|sector))[：:\s]*([^\n]{20,200})/gi,
-          /([^\n]*(?:iPhone|iPad|Mac|Services|Wearables))[：:\s]*([^\n]{20,200})/gi
-        ];
-    
-    for (const pattern of segmentPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 8)) {
-        if (match[1] && match[2] && match[1].trim().length > 2) {
-          segments.push({
-            name: match[1].trim(),
-            performance: match[2].trim(),
-            outlook: undefined,
-          });
-        }
-      }
-    }
-
-    return segments.slice(0, 6); // 最大6セグメント
-  }
-
-  private extractOutlook(text: string, language: string = 'ja'): any {
-    const outlook: any = {
-      risks: [],
-      opportunities: [],
-    };
-
-    // ガイダンス・見通し情報を抽出
-    const guidancePatterns = language === 'ja'
-      ? [
-          /(?:業績予想|見通し|ガイダンス|今後の方針)[：:\s]*([^\n]{30,300})/gi,
-          /(?:2024|2025|2026).*?(?:予想|見込み)[：:\s]*([^\n]{30,300})/gi
-        ]
-      : [
-          /(?:guidance|outlook|forecast|projection)[：:\s]*([^\n]{30,300})/gi,
-          /(?:2024|2025|2026).*?(?:outlook|guidance)[：:\s]*([^\n]{30,300})/gi
-        ];
-    
-    for (const pattern of guidancePatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      if (matches.length > 0) {
-        outlook.guidance = matches[0][1].trim();
-        break;
-      }
-    }
-
-    // リスク要因を抽出
-    const riskPatterns = language === 'ja'
-      ? [
-          /(?:リスク|課題|懸念|不安要素)[：:\s]*([^\n]{20,200})/gi,
-          /(?:影響|変動|不確実性)[：:\s]*([^\n]{20,200})/gi
-        ]
-      : [
-          /(?:risk|challenge|concern|uncertainty)[：:\s]*([^\n]{20,200})/gi,
-          /(?:impact|volatility|headwind)[：:\s]*([^\n]{20,200})/gi
-        ];
-    
-    for (const pattern of riskPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 3)) {
-        if (match[1] && match[1].trim().length > 10) {
-          outlook.risks.push(match[1].trim());
-        }
-      }
-    }
-
-    // 成長機会を抽出
-    const opportunityPatterns = language === 'ja'
-      ? [
-          /(?:機会|成長|戦略|投資|拡大)[：:\s]*([^\n]{20,200})/gi,
-          /(?:新規|強化|推進|展開)[：:\s]*([^\n]{20,200})/gi
-        ]
-      : [
-          /(?:opportunity|growth|strategy|investment|expansion)[：:\s]*([^\n]{20,200})/gi,
-          /(?:innovation|development|initiative)[：:\s]*([^\n]{20,200})/gi
-        ];
-    
-    for (const pattern of opportunityPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 3)) {
-        if (match[1] && match[1].trim().length > 10) {
-          outlook.opportunities.push(match[1].trim());
-        }
-      }
-    }
-
-    return outlook;
-  }
 
   private extractKeyMetrics(documents: Array<any>): any {
     const combinedText = documents.map(doc => doc.extractedText).join('\n\n');
@@ -611,6 +293,315 @@ export class IRSummaryService {
   private extractCompanyName(symbol: string): string {
     // 銘柄コードをベースにした汎用的な会社名
     return /^\d+$/.test(symbol) ? `${symbol} 株式会社` : `${symbol} Inc.`;
+  }
+
+  private isQuarterlyDocument(documentType: string): boolean {
+    return ['earnings_presentation', 'quarterly_report', '10-Q'].includes(documentType);
+  }
+
+  private isAnnualDocument(documentType: string): boolean {
+    return ['annual_report', '10-K'].includes(documentType);
+  }
+
+  private generateQuarterlyEarningSummary(text: string, executive: string, language: string = 'ja'): any {
+    console.log('決算短信用要約生成開始');
+    
+    return {
+      executive,
+      financial_comparison: this.extractFinancialComparison(text, language),
+      guidance_changes: this.extractGuidanceChanges(text, language),
+    };
+  }
+
+  private generateAnnualReportSummary(text: string, executive: string, language: string = 'ja'): any {
+    console.log('有価証券報告書用要約生成開始');
+    
+    return {
+      executive,
+      business_situation: this.extractBusinessSituation(text, language),
+      balance_sheet: this.extractBalanceSheetAnalysis(text, language),
+      profit_loss: this.extractProfitLossAnalysis(text, language),
+    };
+  }
+
+  private extractFinancialComparison(text: string, language: string = 'ja'): any {
+    console.log('財務比較データ抽出中');
+    
+    const comparison = {
+      revenue: this.extractFinancialMetric(text, 'revenue', language),
+      operating_income: this.extractFinancialMetric(text, 'operating_income', language),
+      ordinary_income: this.extractFinancialMetric(text, 'ordinary_income', language),
+      operating_cash_flow: this.extractFinancialMetric(text, 'operating_cash_flow', language),
+    };
+
+    console.log('財務比較データ抽出完了');
+    return comparison;
+  }
+
+  private extractFinancialMetric(text: string, metricType: string, language: string = 'ja'): any {
+    let patterns: RegExp[] = [];
+    
+    if (language === 'ja') {
+      switch (metricType) {
+        case 'revenue':
+          patterns = [
+            /売上高[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前年同期[^\n]*?([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+            /売上収益[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前期[^\n]*?([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+          ];
+          break;
+        case 'operating_income':
+          patterns = [
+            /営業利益[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前年同期[^\n]*?([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+          ];
+          break;
+        case 'ordinary_income':
+          patterns = [
+            /経常利益[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前年同期[^\n]*?([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+          ];
+          break;
+        case 'operating_cash_flow':
+          patterns = [
+            /営業活動によるキャッシュフロー[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前年同期[^\n]*?([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+            /営業CF[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前期[^\n]*?([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+          ];
+          break;
+      }
+    }
+
+    for (const pattern of patterns) {
+      const matches = Array.from(text.matchAll(pattern));
+      if (matches.length > 0) {
+        const match = matches[0];
+        const current = this.parseNumber(match[1]);
+        const previous = this.parseNumber(match[2]);
+        
+        if (current !== undefined && previous !== undefined) {
+          const changeAmount = current - previous;
+          const changePercent = previous !== 0 ? (changeAmount / previous) * 100 : 0;
+          
+          return {
+            current,
+            previous,
+            change_amount: changeAmount,
+            change_percent: Math.round(changePercent * 100) / 100,
+          };
+        }
+      }
+    }
+
+    return {};
+  }
+
+  private extractGuidanceChanges(text: string, language: string = 'ja'): any {
+    console.log('業績予想変更抽出中');
+    
+    const revisionPatterns = language === 'ja'
+      ? [
+          /(?:上方修正|業績予想.*?修正.*?上方)/gi,
+          /(?:下方修正|業績予想.*?修正.*?下方)/gi,
+          /(?:予想.*?変更|ガイダンス.*?変更|見通し.*?変更)/gi,
+        ]
+      : [
+          /(?:upward revision|raised.*?guidance|increased.*?forecast)/gi,
+          /(?:downward revision|lowered.*?guidance|reduced.*?forecast)/gi,
+          /(?:revised.*?guidance|updated.*?forecast)/gi,
+        ];
+
+    let hasRevision = false;
+    let revisionType = 'none';
+    let details = '';
+
+    for (const pattern of revisionPatterns) {
+      const matches = Array.from(text.matchAll(pattern));
+      if (matches.length > 0) {
+        hasRevision = true;
+        const matchText = matches[0][0];
+        details = matchText;
+        
+        if (matchText.includes('上方') || matchText.includes('upward') || matchText.includes('raised') || matchText.includes('increased')) {
+          revisionType = 'upward';
+        } else if (matchText.includes('下方') || matchText.includes('downward') || matchText.includes('lowered') || matchText.includes('reduced')) {
+          revisionType = 'downward';
+        }
+        break;
+      }
+    }
+
+    console.log(`業績予想変更: ${hasRevision ? revisionType : 'なし'}`);
+    return {
+      has_revision: hasRevision,
+      revision_type: revisionType as 'upward' | 'downward' | 'none',
+      details: details || undefined,
+    };
+  }
+
+  private extractBusinessSituation(text: string, language: string = 'ja'): any {
+    console.log('事業状況抽出中');
+    
+    const segmentPatterns = language === 'ja'
+      ? [
+          /([^\n]*(?:事業|セグメント|部門)[^\n]*?)(?:が|は).*?(?:最も|最大|主要|中心).*?(?:利益|収益|売上)/gi,
+          /(?:利益|収益).*?(?:最も|最大|主要).*?([^\n]*(?:事業|セグメント|部門)[^\n]*)/gi,
+        ]
+      : [
+          /([^\n]*(?:segment|business|division)[^\n]*?).*?(?:most|largest|primary|main).*?(?:profit|revenue|income)/gi,
+          /(?:profit|revenue|income).*?(?:most|largest|primary).*?([^\n]*(?:segment|business|division)[^\n]*)/gi,
+        ];
+
+    let mostProfitableSegment = '';
+    let segmentDetails = '';
+
+    for (const pattern of segmentPatterns) {
+      const matches = Array.from(text.matchAll(pattern));
+      if (matches.length > 0) {
+        mostProfitableSegment = matches[0][1]?.trim() || '';
+        segmentDetails = matches[0][0]?.trim() || '';
+        break;
+      }
+    }
+
+    console.log(`最利益セグメント: ${mostProfitableSegment}`);
+    return {
+      most_profitable_segment: mostProfitableSegment || undefined,
+      segment_details: segmentDetails || undefined,
+    };
+  }
+
+  private extractBalanceSheetAnalysis(text: string, language: string = 'ja'): any {
+    console.log('貸借対照表分析中');
+    
+    const bsPatterns = language === 'ja'
+      ? [
+          /総資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*純資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+          /純資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*総資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+          /自己資本比率[：:\s]*([0-9,]+(?:\.[0-9]+)?)%/gi,
+        ]
+      : [
+          /total assets[：:\s]*([0-9,]+(?:\.[0-9]+)?)[^\n]*equity[：:\s]*([0-9,]+(?:\.[0-9]+)?)/gi,
+          /equity ratio[：:\s]*([0-9,]+(?:\.[0-9]+)?)%/gi,
+        ];
+
+    let equityRatio: number | undefined;
+    let totalAssets: number | undefined;
+    let netAssets: number | undefined;
+    let assessment: 'excellent' | 'good' | 'fair' | 'poor' | undefined;
+
+    for (const pattern of bsPatterns) {
+      const matches = Array.from(text.matchAll(pattern));
+      if (matches.length > 0) {
+        const match = matches[0];
+        
+        if (pattern.toString().includes('自己資本比率') || pattern.toString().includes('equity ratio')) {
+          equityRatio = this.parseNumber(match[1]);
+        } else {
+          const asset1 = this.parseNumber(match[1]);
+          const asset2 = this.parseNumber(match[2]);
+          
+          if (asset1 && asset2) {
+            if (pattern.toString().includes('総資産.*純資産')) {
+              totalAssets = asset1;
+              netAssets = asset2;
+              equityRatio = (asset2 / asset1) * 100;
+            } else {
+              totalAssets = asset2;
+              netAssets = asset1;
+              equityRatio = (asset1 / asset2) * 100;
+            }
+          }
+        }
+        
+        if (equityRatio) {
+          if (equityRatio >= 70) assessment = 'excellent';
+          else if (equityRatio >= 40) assessment = 'good';
+          else if (equityRatio >= 20) assessment = 'fair';
+          else assessment = 'poor';
+          break;
+        }
+      }
+    }
+
+    console.log(`純資産比率: ${equityRatio}% (${assessment})`);
+    return {
+      equity_ratio: equityRatio,
+      equity_ratio_assessment: assessment,
+      total_assets: totalAssets,
+      net_assets: netAssets,
+    };
+  }
+
+  private extractProfitLossAnalysis(text: string, language: string = 'ja'): any {
+    console.log('損益計算書分析中');
+    
+    const plPatterns = language === 'ja'
+      ? [
+          /売上.*?([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|兆円)[^\n]*前年.*?([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|兆円)/gi,
+          /利益.*?([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|兆円)[^\n]*前年.*?([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|兆円)/gi,
+          /前年同期比.*?売上.*?([+-]?[0-9,]+(?:\.[0-9]+)?)%/gi,
+          /前年同期比.*?利益.*?([+-]?[0-9,]+(?:\.[0-9]+)?)%/gi,
+        ]
+      : [
+          /revenue.*?([0-9,]+(?:\.[0-9]+)?)[^\n]*previous.*?([0-9,]+(?:\.[0-9]+)?)/gi,
+          /profit.*?([0-9,]+(?:\.[0-9]+)?)[^\n]*previous.*?([0-9,]+(?:\.[0-9]+)?)/gi,
+        ];
+
+    let revenueImproved: boolean | undefined;
+    let profitImproved: boolean | undefined;
+    let revenueChangePercent: number | undefined;
+    let profitChangePercent: number | undefined;
+    let details = '';
+
+    for (const pattern of plPatterns) {
+      const matches = Array.from(text.matchAll(pattern));
+      if (matches.length > 0) {
+        const match = matches[0];
+        
+        if (pattern.toString().includes('%')) {
+          const changePercent = this.parseNumber(match[1]);
+          if (changePercent !== undefined) {
+            if (pattern.toString().includes('売上') || pattern.toString().includes('revenue')) {
+              revenueChangePercent = changePercent;
+              revenueImproved = changePercent > 0;
+            } else if (pattern.toString().includes('利益') || pattern.toString().includes('profit')) {
+              profitChangePercent = changePercent;
+              profitImproved = changePercent > 0;
+            }
+          }
+        } else {
+          const current = this.parseNumber(match[1]);
+          const previous = this.parseNumber(match[2]);
+          
+          if (current !== undefined && previous !== undefined) {
+            const changePercent = previous !== 0 ? ((current - previous) / previous) * 100 : 0;
+            
+            if (pattern.toString().includes('売上') || pattern.toString().includes('revenue')) {
+              revenueChangePercent = Math.round(changePercent * 100) / 100;
+              revenueImproved = changePercent > 0;
+            } else if (pattern.toString().includes('利益') || pattern.toString().includes('profit')) {
+              profitChangePercent = Math.round(changePercent * 100) / 100;
+              profitImproved = changePercent > 0;
+            }
+          }
+        }
+        
+        details += match[0] + ' ';
+      }
+    }
+
+    console.log(`売上向上: ${revenueImproved}, 利益向上: ${profitImproved}`);
+    return {
+      revenue_improved: revenueImproved,
+      profit_improved: profitImproved,
+      revenue_change_percent: revenueChangePercent,
+      profit_change_percent: profitChangePercent,
+      details: details.trim() || undefined,
+    };
+  }
+
+  private parseNumber(str: string): number | undefined {
+    if (!str) return undefined;
+    const cleanStr = str.replace(/,/g, '').replace(/[^\d.-]/g, '');
+    const num = parseFloat(cleanStr);
+    return isNaN(num) ? undefined : num;
   }
 
 }

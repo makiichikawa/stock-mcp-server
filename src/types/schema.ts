@@ -177,6 +177,64 @@ export const IRSummaryRequestSchema = z.object({
   extractionMode: z.enum(['text', 'layout', 'ocr', 'auto']).optional().default('auto'),
 });
 
+// 決算短信用の要約スキーマ
+export const QuarterlyEarningSummarySchema = z.object({
+  executive: z.string(), // 全文要約（3-5行）
+  financial_comparison: z.object({
+    revenue: z.object({
+      current: z.number().optional(),
+      previous: z.number().optional(),
+      change_percent: z.number().optional(),
+      change_amount: z.number().optional(),
+    }).optional(),
+    operating_income: z.object({
+      current: z.number().optional(),
+      previous: z.number().optional(),
+      change_percent: z.number().optional(),
+      change_amount: z.number().optional(),
+    }).optional(),
+    ordinary_income: z.object({
+      current: z.number().optional(),
+      previous: z.number().optional(),
+      change_percent: z.number().optional(),
+      change_amount: z.number().optional(),
+    }).optional(),
+    operating_cash_flow: z.object({
+      current: z.number().optional(),
+      previous: z.number().optional(),
+      change_percent: z.number().optional(),
+      change_amount: z.number().optional(),
+    }).optional(),
+  }),
+  guidance_changes: z.object({
+    has_revision: z.boolean(),
+    revision_type: z.enum(['upward', 'downward', 'none']).optional(),
+    details: z.string().optional(),
+  }),
+});
+
+// 有価証券報告書用の要約スキーマ
+export const AnnualReportSummarySchema = z.object({
+  executive: z.string(), // 全文要約（3-5行）
+  business_situation: z.object({
+    most_profitable_segment: z.string().optional(),
+    segment_details: z.string().optional(),
+  }),
+  balance_sheet: z.object({
+    equity_ratio: z.number().optional(), // 純資産比率
+    equity_ratio_assessment: z.enum(['excellent', 'good', 'fair', 'poor']).optional(),
+    total_assets: z.number().optional(),
+    net_assets: z.number().optional(),
+  }),
+  profit_loss: z.object({
+    revenue_improved: z.boolean().optional(),
+    profit_improved: z.boolean().optional(),
+    revenue_change_percent: z.number().optional(),
+    profit_change_percent: z.number().optional(),
+    details: z.string().optional(),
+  }),
+});
+
 export const IRSummaryResponseSchema = z.object({
   symbol: z.string(),
   documentType: z.string(),
@@ -186,13 +244,10 @@ export const IRSummaryResponseSchema = z.object({
     processingTime: z.number(),
     pageCount: z.number(),
   }),
-  summary: z.object({
-    executive: z.string(), // 3-5行の全文要約
-    financial_highlights: z.array(z.string()), // 業績ハイライト
-    business_segments: z.array(z.string()), // 事業セグメント別分析
-    risks: z.array(z.string()), // リスク要因
-    outlook: z.array(z.string()), // 今後の見通し
-  }),
+  summary: z.union([
+    QuarterlyEarningSummarySchema,
+    AnnualReportSummarySchema,
+  ]),
   key_metrics: z.object({
     revenue: z.number().optional(),
     profit: z.number().optional(),
@@ -204,3 +259,5 @@ export const IRSummaryResponseSchema = z.object({
 
 export type IRSummaryRequest = z.infer<typeof IRSummaryRequestSchema>;
 export type IRSummaryResponse = z.infer<typeof IRSummaryResponseSchema>;
+export type QuarterlyEarningSummary = z.infer<typeof QuarterlyEarningSummarySchema>;
+export type AnnualReportSummary = z.infer<typeof AnnualReportSummarySchema>;
