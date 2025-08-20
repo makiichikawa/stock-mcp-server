@@ -175,6 +175,7 @@ export const IRSummaryRequestSchema = z.object({
   companyName: z.string().optional(),
   language: z.enum(['ja', 'en']).default('ja'),
   extractionMode: z.enum(['text', 'layout', 'ocr', 'auto']).optional().default('auto'),
+  documentTypeFilter: z.enum(['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q']).optional(),
 });
 
 // 決算短信用の要約スキーマ
