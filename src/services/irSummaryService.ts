@@ -29,7 +29,7 @@ export class IRSummaryService {
       
       return {
         symbol: request.symbol,
-        documentType: this.determineMainDocumentType(documents),
+        documentType: request.documentTypeFilter || this.determineMainDocumentType(documents),
         processingInfo,
         summary,
         key_metrics: keyMetrics,
@@ -105,13 +105,24 @@ export class IRSummaryService {
   private async analyzeAndSummarize(documents: Array<any>, request: IRSummaryRequest): Promise<any> {
     console.log('IR文書分析・要約処理開始');
     
-    const documentType = this.determineMainDocumentType(documents);
-    
-    // earnings文書がある場合は、earnings文書のみを使用
     let targetDocuments = documents;
-    if (documentType === 'earnings_presentation') {
-      targetDocuments = documents.filter(doc => doc.documentType === 'earnings_presentation');
-      console.log(`earnings文書のみを使用: ${targetDocuments.length}件`);
+    let documentType: string;
+    
+    // documentTypeFilterが指定されている場合は、その文書タイプのみを使用
+    if (request.documentTypeFilter) {
+      targetDocuments = documents.filter(doc => doc.documentType === request.documentTypeFilter);
+      if (targetDocuments.length === 0) {
+        throw new Error(`指定された文書タイプ '${request.documentTypeFilter}' のドキュメントが見つかりません`);
+      }
+      documentType = request.documentTypeFilter;
+      console.log(`指定文書タイプのみを使用: ${request.documentTypeFilter} (${targetDocuments.length}件)`);
+    } else {
+      // フィルターが指定されていない場合は複数文書を統合処理
+      documentType = this.determineMainDocumentType(documents);
+      
+      // 全ての文書を使用（決算短信と有価証券報告書の両方がある場合は両方を統合）
+      targetDocuments = documents;
+      console.log(`全文書を統合使用: ${targetDocuments.length}件`);
     }
     
     const combinedText = targetDocuments.map(doc => doc.extractedText).join('\n\n');
@@ -124,7 +135,13 @@ export class IRSummaryService {
     const executive = this.generateExecutiveSummary(combinedText, request.language);
     console.log('全体要約生成完了');
     
-    // 文書タイプに応じて異なる要約構造を生成
+    // 複数文書がある場合は統合要約を生成
+    if (targetDocuments.length > 1) {
+      console.log('複数文書統合要約を生成中...');
+      return this.generateIntegratedSummary(targetDocuments, combinedText, executive, request.language);
+    }
+    
+    // 単一文書の場合は文書タイプに応じて要約構造を生成
     if (this.isQuarterlyDocument(documentType)) {
       console.log('決算短信用要約を生成中...');
       return this.generateQuarterlyEarningSummary(combinedText, executive, request.language);
@@ -410,6 +427,37 @@ export class IRSummaryService {
     };
   }
 
+  private generateIntegratedSummary(documents: Array<any>, combinedText: string, executive: string, language: string = 'ja'): any {
+    console.log('複数文書統合要約生成開始');
+    
+    // 決算短信と有価証券報告書の両方の情報を統合
+    const summary: any = {
+      executive,
+    };
+    
+    // 決算短信文書があるかチェック
+    const earningsDoc = documents.find(doc => this.isQuarterlyDocument(doc.documentType));
+    if (earningsDoc) {
+      console.log('決算短信データを統合中...');
+      const earningsText = earningsDoc.extractedText;
+      summary.financial_comparison = this.extractFinancialComparison(earningsText, language);
+      summary.guidance_changes = this.extractGuidanceChanges(earningsText, language);
+    }
+    
+    // 有価証券報告書文書があるかチェック
+    const annualDoc = documents.find(doc => this.isAnnualDocument(doc.documentType));
+    if (annualDoc) {
+      console.log('有価証券報告書データを統合中...');
+      const annualText = annualDoc.extractedText;
+      summary.business_situation = this.extractBusinessSituation(annualText, language);
+      summary.balance_sheet = this.extractBalanceSheetAnalysis(annualText, language);
+      summary.profit_loss = this.extractProfitLossAnalysis(annualText, language);
+    }
+    
+    console.log('複数文書統合要約生成完了');
+    return summary;
+  }
+
   private extractFinancialComparison(text: string, language: string = 'ja'): any {
     console.log('財務比較データ抽出中');
     
@@ -655,25 +703,88 @@ export class IRSummaryService {
   private extractBusinessSituation(text: string, language: string = 'ja'): any {
     console.log('事業状況抽出中');
     
-    const segmentPatterns = language === 'ja'
-      ? [
-          /([^\n]*(?:事業|セグメント|部門)[^\n]*?)(?:が|は).*?(?:最も|最大|主要|中心).*?(?:利益|収益|売上)/gi,
-          /(?:利益|収益).*?(?:最も|最大|主要).*?([^\n]*(?:事業|セグメント|部門)[^\n]*)/gi,
-        ]
-      : [
-          /([^\n]*(?:segment|business|division)[^\n]*?).*?(?:most|largest|primary|main).*?(?:profit|revenue|income)/gi,
-          /(?:profit|revenue|income).*?(?:most|largest|primary).*?([^\n]*(?:segment|business|division)[^\n]*)/gi,
-        ];
-
+    // 実際の文書言語を判定
+    const actualLanguage = this.detectLanguage(text);
+    
     let mostProfitableSegment = '';
     let segmentDetails = '';
+    let segmentRevenues: Array<{name: string, revenue: number}> = [];
 
-    for (const pattern of segmentPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      if (matches.length > 0) {
-        mostProfitableSegment = matches[0][1]?.trim() || '';
-        segmentDetails = matches[0][0]?.trim() || '';
-        break;
+    if (actualLanguage === 'en') {
+      // APPLのような10-K文書のセグメント分析
+      
+      // 1. Net sales by reportable segment セクションを探す
+      const segmentSalesPattern = /net sales by reportable segment[\s\S]{0,2000}?(?:Total net sales)/gi;
+      const segmentSalesMatch = text.match(segmentSalesPattern);
+      
+      if (segmentSalesMatch) {
+        const segmentSection = segmentSalesMatch[0];
+        console.log('セグメント売上セクション発見');
+        
+        // 地理的セグメントから売上高を抽出
+        const geoSegmentPatterns = [
+          /Americas\s*\$?\s*([0-9,]+)/gi,
+          /Europe\s*\$?\s*([0-9,]+)/gi,
+          /Greater China\s*\$?\s*([0-9,]+)/gi,
+          /Japan\s*\$?\s*([0-9,]+)/gi,
+          /Rest of Asia Pacific\s*\$?\s*([0-9,]+)/gi,
+        ];
+        
+        geoSegmentPatterns.forEach(pattern => {
+          const matches = Array.from(segmentSection.matchAll(pattern));
+          if (matches.length > 0) {
+            const segmentName = pattern.source.split('\\')[0];
+            const revenue = parseFloat(matches[0][1].replace(/,/g, ''));
+            if (!isNaN(revenue)) {
+              segmentRevenues.push({ name: segmentName, revenue });
+            }
+          }
+        });
+      }
+      
+      // 2. 製品別セグメント情報を探す
+      const productSegmentPatterns = [
+        /iPhone[\s\S]{0,200}?\$?\s*([0-9,]+)/gi,
+        /Mac[\s\S]{0,200}?\$?\s*([0-9,]+)/gi,
+        /iPad[\s\S]{0,200}?\$?\s*([0-9,]+)/gi,
+        /Services[\s\S]{0,200}?\$?\s*([0-9,]+)/gi,
+        /Wearables[\s\S]{0,200}?\$?\s*([0-9,]+)/gi,
+      ];
+      
+      productSegmentPatterns.forEach(pattern => {
+        const matches = Array.from(text.matchAll(pattern));
+        if (matches.length > 0) {
+          const segmentName = pattern.source.split('[')[0];
+          const revenue = parseFloat(matches[0][1].replace(/,/g, ''));
+          if (!isNaN(revenue)) {
+            segmentRevenues.push({ name: segmentName, revenue });
+          }
+        }
+      });
+      
+      // 最大売上のセグメントを特定
+      if (segmentRevenues.length > 0) {
+        const maxSegment = segmentRevenues.reduce((max, current) => 
+          current.revenue > max.revenue ? current : max
+        );
+        mostProfitableSegment = maxSegment.name;
+        segmentDetails = `${maxSegment.name}: $${maxSegment.revenue.toLocaleString()} million`;
+      }
+      
+    } else {
+      // 日本語文書のパターン
+      const segmentPatterns = [
+        /([^\n]*(?:事業|セグメント|部門)[^\n]*?)(?:が|は).*?(?:最も|最大|主要|中心).*?(?:利益|収益|売上)/gi,
+        /(?:利益|収益).*?(?:最も|最大|主要).*?([^\n]*(?:事業|セグメント|部門)[^\n]*)/gi,
+      ];
+
+      for (const pattern of segmentPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        if (matches.length > 0) {
+          mostProfitableSegment = matches[0][1]?.trim() || '';
+          segmentDetails = matches[0][0]?.trim() || '';
+          break;
+        }
       }
     }
 
@@ -681,60 +792,102 @@ export class IRSummaryService {
     return {
       most_profitable_segment: mostProfitableSegment || undefined,
       segment_details: segmentDetails || undefined,
+      segment_revenues: segmentRevenues.length > 0 ? segmentRevenues : undefined,
     };
   }
 
   private extractBalanceSheetAnalysis(text: string, language: string = 'ja'): any {
     console.log('貸借対照表分析中');
     
-    const bsPatterns = language === 'ja'
-      ? [
-          /総資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*純資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
-          /純資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*総資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
-          /自己資本比率[：:\s]*([0-9,]+(?:\.[0-9]+)?)%/gi,
-        ]
-      : [
-          /total assets[：:\s]*([0-9,]+(?:\.[0-9]+)?)[^\n]*equity[：:\s]*([0-9,]+(?:\.[0-9]+)?)/gi,
-          /equity ratio[：:\s]*([0-9,]+(?:\.[0-9]+)?)%/gi,
-        ];
-
+    // 実際の文書言語を判定
+    const actualLanguage = this.detectLanguage(text);
+    
     let equityRatio: number | undefined;
     let totalAssets: number | undefined;
     let netAssets: number | undefined;
     let assessment: 'excellent' | 'good' | 'fair' | 'poor' | undefined;
 
-    for (const pattern of bsPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      if (matches.length > 0) {
-        const match = matches[0];
-        
-        if (pattern.toString().includes('自己資本比率') || pattern.toString().includes('equity ratio')) {
-          equityRatio = this.parseNumber(match[1]);
-        } else {
-          const asset1 = this.parseNumber(match[1]);
-          const asset2 = this.parseNumber(match[2]);
-          
-          if (asset1 && asset2) {
-            if (pattern.toString().includes('総資産.*純資産')) {
-              totalAssets = asset1;
-              netAssets = asset2;
-              equityRatio = (asset2 / asset1) * 100;
-            } else {
-              totalAssets = asset2;
-              netAssets = asset1;
-              equityRatio = (asset1 / asset2) * 100;
-            }
-          }
-        }
-        
-        if (equityRatio) {
-          if (equityRatio >= 70) assessment = 'excellent';
-          else if (equityRatio >= 40) assessment = 'good';
-          else if (equityRatio >= 20) assessment = 'fair';
-          else assessment = 'poor';
+    if (actualLanguage === 'en') {
+      // 英語文書（10-K）の貸借対照表分析
+      
+      // 総資産を抽出
+      const totalAssetsPatterns = [
+        /Total assets[\s\S]{0,200}?\$?\s*([0-9,]+)/gi,
+        /TOTAL ASSETS[\s\S]{0,200}?\$?\s*([0-9,]+)/gi,
+      ];
+      
+      for (const pattern of totalAssetsPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        if (matches.length > 0) {
+          totalAssets = this.parseNumber(matches[0][1]);
+          console.log(`総資産: ${totalAssets}`);
           break;
         }
       }
+      
+      // 株主資本を抽出
+      const shareholdersEquityPatterns = [
+        /Total shareholders.* equity[\s\S]{0,200}?\$?\s*([0-9,]+)/gi,
+        /TOTAL SHAREHOLDERS.* EQUITY[\s\S]{0,200}?\$?\s*([0-9,]+)/gi,
+      ];
+      
+      for (const pattern of shareholdersEquityPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        if (matches.length > 0) {
+          netAssets = this.parseNumber(matches[0][1]);
+          console.log(`株主資本: ${netAssets}`);
+          break;
+        }
+      }
+      
+      // 自己資本比率を計算
+      if (totalAssets && netAssets && totalAssets > 0) {
+        equityRatio = (netAssets / totalAssets) * 100;
+      }
+      
+    } else {
+      // 日本語文書のパターン
+      const bsPatterns = [
+        /総資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*純資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+        /純資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*総資産[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
+        /自己資本比率[：:\s]*([0-9,]+(?:\.[0-9]+)?)%/gi,
+      ];
+
+      for (const pattern of bsPatterns) {
+        const matches = Array.from(text.matchAll(pattern));
+        if (matches.length > 0) {
+          const match = matches[0];
+          
+          if (pattern.toString().includes('自己資本比率')) {
+            equityRatio = this.parseNumber(match[1]);
+          } else {
+            const asset1 = this.parseNumber(match[1]);
+            const asset2 = this.parseNumber(match[2]);
+            
+            if (asset1 && asset2) {
+              if (pattern.toString().includes('総資産.*純資産')) {
+                totalAssets = asset1;
+                netAssets = asset2;
+                equityRatio = (asset2 / asset1) * 100;
+              } else {
+                totalAssets = asset2;
+                netAssets = asset1;
+                equityRatio = (asset1 / asset2) * 100;
+              }
+            }
+          }
+          
+          if (equityRatio) break;
+        }
+      }
+    }
+    
+    // 評価を設定
+    if (equityRatio) {
+      if (equityRatio >= 70) assessment = 'excellent';
+      else if (equityRatio >= 40) assessment = 'good';
+      else if (equityRatio >= 20) assessment = 'fair';
+      else assessment = 'poor';
     }
 
     console.log(`純資産比率: ${equityRatio}% (${assessment})`);
