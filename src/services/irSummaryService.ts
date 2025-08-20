@@ -105,9 +105,17 @@ export class IRSummaryService {
   private async analyzeAndSummarize(documents: Array<any>, request: IRSummaryRequest): Promise<any> {
     console.log('IR文書分析・要約処理開始');
     
-    const combinedText = documents.map(doc => doc.extractedText).join('\n\n');
-    const totalTextLength = combinedText.length;
     const documentType = this.determineMainDocumentType(documents);
+    
+    // earnings文書がある場合は、earnings文書のみを使用
+    let targetDocuments = documents;
+    if (documentType === 'earnings_presentation') {
+      targetDocuments = documents.filter(doc => doc.documentType === 'earnings_presentation');
+      console.log(`earnings文書のみを使用: ${targetDocuments.length}件`);
+    }
+    
+    const combinedText = targetDocuments.map(doc => doc.extractedText).join('\n\n');
+    const totalTextLength = combinedText.length;
     
     console.log(`結合テキスト長: ${totalTextLength.toLocaleString()} 文字`);
     console.log(`文書タイプ: ${documentType}`);
@@ -179,25 +187,46 @@ export class IRSummaryService {
     // 英語文書から主要な財務指標を抽出して日本語で要約
     const keyMetrics = [];
     
-    // 売上高の情報を抽出
-    const revenueMatch = text.match(/Total\s+Revenue\s+and\s+Other\s+Income.*?\$([0-9,]+)\s*million.*?up\s+([0-9]+)%/i);
+    // PGY形式の売上高情報を抽出
+    let revenueMatch = text.match(/Total\s+Revenue\s+and\s+Other\s+Income.*?\$([0-9,]+)\s*million.*?up\s+([0-9]+)%/i);
     if (revenueMatch) {
       keyMetrics.push(`総収益は${revenueMatch[1]}百万ドル（前年同期比+${revenueMatch[2]}%）`);
+    } else {
+      // AAPL形式の売上高情報を抽出: "Total net sales $94,036 $85,777"
+      revenueMatch = text.match(/Total\s+net\s+sales\s*\$?\s*([0-9,]+(?:\.[0-9]+)?)\s*\$?\s*([0-9,]+(?:\.[0-9]+)?)/i);
+      if (revenueMatch) {
+        const current = parseFloat(revenueMatch[1].replace(/,/g, ''));
+        const previous = parseFloat(revenueMatch[2].replace(/,/g, ''));
+        const changePercent = ((current - previous) / previous * 100);
+        keyMetrics.push(`総売上高は${revenueMatch[1]}百万ドル（前年同期比${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%）`);
+      }
     }
     
-    // 営業利益の情報を抽出
-    const operatingIncomeMatch = text.match(/Operating\s+Income.*?\$([0-9,]+)\s*million/i);
+    // PGY形式の営業利益情報を抽出
+    let operatingIncomeMatch = text.match(/Operating\s+Income.*?\$([0-9,]+)\s*million/i);
     if (operatingIncomeMatch) {
       keyMetrics.push(`営業利益${operatingIncomeMatch[1]}百万ドル`);
+    } else {
+      // AAPL形式の営業利益情報を抽出: "Operating income $28,202 $25,352"
+      operatingIncomeMatch = text.match(/Operating\s+income\s*\$?\s*([0-9,]+(?:\.[0-9]+)?)\s*\$?\s*([0-9,]+(?:\.[0-9]+)?)/i);
+      if (operatingIncomeMatch) {
+        keyMetrics.push(`営業利益は${operatingIncomeMatch[1]}百万ドル`);
+      }
     }
     
-    // 株主帰属利益の情報を抽出
+    // 純利益の情報を抽出（AAPL形式）: "Net income $23,434 $21,448"
+    const netIncomeMatch = text.match(/Net\s+income\s*\$?\s*([0-9,]+(?:\.[0-9]+)?)\s*\$?\s*([0-9,]+(?:\.[0-9]+)?)/i);
+    if (netIncomeMatch) {
+      keyMetrics.push(`純利益は${netIncomeMatch[1]}百万ドル`);
+    }
+    
+    // PGY形式の株主帰属利益の情報を抽出
     const shareholderIncomeMatch = text.match(/attributable\s+to.*?shareholders.*?\$([0-9,]+)\s*million/i);
     if (shareholderIncomeMatch) {
       keyMetrics.push(`株主帰属利益${shareholderIncomeMatch[1]}百万ドル`);
     }
     
-    // ガイダンスの情報を抽出
+    // PGY形式のガイダンスの情報を抽出
     const guidanceMatch = text.match(/Expected\s+to\s+be\s+between\s+\$([0-9,]+)\s+million\s+and\s+\$([0-9,]+)\s+million/i);
     if (guidanceMatch) {
       keyMetrics.push(`通期予想は${guidanceMatch[1]}〜${guidanceMatch[2]}百万ドル`);
@@ -289,7 +318,20 @@ export class IRSummaryService {
 
   private determineMainDocumentType(documents: Array<any>): string {
     if (documents.length === 0) return 'unknown';
-    // 最初のドキュメントのタイプをメインタイプとして返す
+    
+    // earnings文書を優先する
+    const earningsDoc = documents.find(doc => doc.documentType === 'earnings_presentation');
+    if (earningsDoc) {
+      return 'earnings_presentation';
+    }
+    
+    // quarterly文書を次に優先する
+    const quarterlyDoc = documents.find(doc => doc.documentType === 'quarterly_report' || doc.documentType === '10-Q');
+    if (quarterlyDoc) {
+      return quarterlyDoc.documentType;
+    }
+    
+    // その他の場合は最初のドキュメントのタイプを返す
     return documents[0].documentType || 'quarterly_report';
   }
 
@@ -439,18 +481,24 @@ export class IRSummaryService {
       switch (metricType) {
         case 'revenue':
           patterns = [
-            // Pattern for financial statement: "Total Revenue and Other Income 326,398 250,344" (in thousands)
+            // PGY format: "Total Revenue and Other Income 326,398 250,344" (in thousands)
             /Total\s+Revenue\s+and\s+Other\s+Income\s+([0-9,]+)\s+([0-9,]+)/gi,
-            // More specific pattern matching the exact structure
             /Total\s+Revenue\s+and\s+Other\s+Income.*?\$?\s*([0-9,]+(?:,[0-9]{3})*)\s*.*?\$?\s*([0-9,]+(?:,[0-9]{3})*)/gi,
-            // Pattern for text description: "increased by 30% year-over-year" with specific amounts
             /Total\s+Revenue\s+and\s+Other\s+Income\s+of\s+\$([0-9,]+)\s+million.*?\$([0-9,]+)\s+million/gi,
+            // AAPL format: "Total net sales $94,036 $85,777"
+            /Total\s+net\s+sales\s*\$?\s*([0-9,]+(?:\.[0-9]+)?)\s*\$?\s*([0-9,]+(?:\.[0-9]+)?)/gi,
+            // Alternative format: "Net sales: ... Total net sales 94,036 85,777"
+            /Total\s+net\s+sales\s+([0-9,]+)\s+([0-9,]+)/gi,
           ];
           break;
         case 'operating_income':
           patterns = [
-            // Pattern for PGY format: "Operating Income  56,469   5,027"
+            // PGY format: "Operating Income  56,469   5,027"
             /Operating Income\s+([0-9,]+)\s+([0-9,]+)/gi,
+            // AAPL format: "Operating income $28,202 $25,352"
+            /Operating\s+income\s*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)/gi,
+            // Alternative format: "Operating income 28,202 25,352"
+            /Operating\s+income\s+([+-]?[0-9,]+)\s+([+-]?[0-9,]+)/gi,
             // General patterns
             /(?:Operating\s+)?(?:Income|Profit)\s*[:$\s]*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?[^\n]*?(?:prior\s+year|previous\s+year)[^\n]*?\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?/gi,
             /EBIT[DA]?\s*[:$\s]*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?[^\n]*?(?:vs|versus|compared\s+to)[^\n]*?\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?/gi,
@@ -458,18 +506,23 @@ export class IRSummaryService {
           break;
         case 'ordinary_income':
           patterns = [
-            // Pattern for PGY format: "Income (Loss) Before Income Taxes  21,541   (68,167)"
+            // PGY format: "Income (Loss) Before Income Taxes  21,541   (68,167)"
             /Income \(Loss\) Before Income Taxes\s+([0-9,]+|\([0-9,]+\))\s+([0-9,]+|\([0-9,]+\))/gi,
-            // Alternative patterns
             /Income Before Income Taxes\s+([0-9,]+|\([0-9,]+\))\s+([0-9,]+|\([0-9,]+\))/gi,
+            // AAPL format: "Net income $23,434 $21,448" 
+            /Net\s+income\s*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)/gi,
+            // Alternative format: "Net income 23,434 21,448"
+            /Net\s+income\s+([+-]?[0-9,]+)\s+([+-]?[0-9,]+)/gi,
             // General patterns
             /(?:Pre-tax\s+)?(?:Income|Earnings)\s*[:$\s]*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?[^\n]*?(?:prior\s+year|previous\s+year)[^\n]*?\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?/gi,
           ];
           break;
         case 'operating_cash_flow':
           patterns = [
-            // Pattern for PGY format: "Net cash provided by operating activities  91,777   27,004"
+            // PGY format: "Net cash provided by operating activities  91,777   27,004"
             /Net cash provided by operating activities\s+([0-9,]+)\s+([0-9,]+)/gi,
+            // AAPL format: "Cash generated by operating activities 81,754 91,443"
+            /Cash\s+generated\s+by\s+operating\s+activities\s+([+-]?[0-9,]+)\s+([+-]?[0-9,]+)/gi,
             // Alternative patterns
             /(?:Operating\s+)?Cash\s+Flow\s*[:$\s]*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?[^\n]*?(?:prior\s+year|previous\s+year)[^\n]*?\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?/gi,
             /OCF\s*[:$\s]*\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?[^\n]*?(?:vs|versus|compared\s+to)[^\n]*?\$?\s*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:million|billion|thousand|M|B|K)?/gi,
@@ -486,15 +539,18 @@ export class IRSummaryService {
         const previous = this.parseNumber(match[2]);
         
         if (current !== undefined && previous !== undefined) {
-          // PGYの場合、財務データは千ドル単位で記載されているので、百万ドル単位に変換
           let currentValue = current;
           let previousValue = previous;
           
-          // 数値が大きすぎる場合（千ドル単位）、百万ドル単位に変換
-          if (current > 10000) {
+          // 数値の単位を統一（百万ドル単位）
+          // PGYの場合：千ドル単位で記載されているので、百万ドル単位に変換
+          // AAPLの場合：既に百万ドル単位で記載
+          if (current > 50000) {
+            // 50,000以上の場合は千ドル単位と判定（PGY形式）
             currentValue = current / 1000;
             previousValue = previous / 1000;
           }
+          // 50,000未満の場合は既に百万ドル単位と判定（AAPL形式）
           
           const changeAmount = currentValue - previousValue;
           const changePercent = previousValue !== 0 ? (changeAmount / previousValue) * 100 : 0;
@@ -515,16 +571,22 @@ export class IRSummaryService {
   private extractGuidanceChanges(text: string, language: string = 'ja'): any {
     console.log('業績予想変更抽出中');
     
-    const revisionPatterns = language === 'ja'
+    // 実際の文書言語を判定
+    const actualLanguage = this.detectLanguage(text) || language;
+    console.log(`ガイダンス検出言語: ${actualLanguage}`);
+    
+    const revisionPatterns = actualLanguage === 'ja'
       ? [
           /(?:上方修正|業績予想.*?修正.*?上方)/gi,
           /(?:下方修正|業績予想.*?修正.*?下方)/gi,
           /(?:予想.*?変更|ガイダンス.*?変更|見通し.*?変更)/gi,
         ]
       : [
+          /(?:raises?\s+(?:full-year\s+)?guidance|raised.*?guidance|increased.*?forecast)/gi,
           /(?:upward revision|raised.*?guidance|increased.*?forecast)/gi,
           /(?:downward revision|lowered.*?guidance|reduced.*?forecast)/gi,
           /(?:revised.*?guidance|updated.*?forecast)/gi,
+          /(?:exceeding outlook|above.*?guidance|higher.*?than.*?outlook)/gi,
         ];
 
     let hasRevision = false;
@@ -536,9 +598,15 @@ export class IRSummaryService {
       if (matches.length > 0) {
         hasRevision = true;
         const matchText = matches[0][0];
-        details = matchText;
         
-        if (matchText.includes('上方') || matchText.includes('upward') || matchText.includes('raised') || matchText.includes('increased')) {
+        // 英語の表現を日本語に変換
+        if (actualLanguage === 'en') {
+          details = this.translateGuidanceDetailsToJapanese(matchText);
+        } else {
+          details = matchText;
+        }
+        
+        if (matchText.includes('上方') || matchText.includes('upward') || matchText.includes('raised') || matchText.includes('increased') || matchText.includes('raises') || matchText.includes('exceeding')) {
           revisionType = 'upward';
         } else if (matchText.includes('下方') || matchText.includes('downward') || matchText.includes('lowered') || matchText.includes('reduced')) {
           revisionType = 'downward';
@@ -553,6 +621,35 @@ export class IRSummaryService {
       revision_type: revisionType as 'upward' | 'downward' | 'none',
       details: details || undefined,
     };
+  }
+
+  private translateGuidanceDetailsToJapanese(englishText: string): string {
+    const lowerText = englishText.toLowerCase();
+    
+    if (lowerText.includes('raises full-year guidance') || lowerText.includes('raised full-year guidance')) {
+      return '通期ガイダンスを引き上げ';
+    } else if (lowerText.includes('raises') && lowerText.includes('guidance')) {
+      return 'ガイダンスを引き上げ';
+    } else if (lowerText.includes('exceeding outlook')) {
+      return '業績見通しを上回る';
+    } else if (lowerText.includes('above') && lowerText.includes('guidance')) {
+      return 'ガイダンスを上回る';
+    } else if (lowerText.includes('raised') && lowerText.includes('guidance')) {
+      return 'ガイダンスを引き上げ';
+    } else if (lowerText.includes('increased') && lowerText.includes('forecast')) {
+      return '予想を引き上げ';
+    } else if (lowerText.includes('upward revision')) {
+      return '上方修正';
+    } else if (lowerText.includes('lowered') && lowerText.includes('guidance')) {
+      return 'ガイダンスを引き下げ';
+    } else if (lowerText.includes('reduced') && lowerText.includes('forecast')) {
+      return '予想を引き下げ';
+    } else if (lowerText.includes('downward revision')) {
+      return '下方修正';
+    } else {
+      // フォールバック：一般的な翻訳
+      return '業績予想の変更';
+    }
   }
 
   private extractBusinessSituation(text: string, language: string = 'ja'): any {
