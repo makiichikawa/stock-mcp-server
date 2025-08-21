@@ -11,3 +11,7 @@ debug/
 # Local PDF files
 local_pdf/*
 !local_pdf/README.md
+
+# Summary reports (except specification)
+summary/*
+!summary/ir-summary-format-specification.md
