@@ -481,22 +481,6 @@ export declare const EarningsGuidanceSchema: z.ZodObject<{
     }[];
     companyName?: string | undefined;
 }>;
-export declare const IRDocumentSchema: z.ZodObject<{
-    symbol: z.ZodString;
-    documentUrl: z.ZodString;
-    documentType: z.ZodEnum<["earnings_presentation", "annual_report", "quarterly_report", "10-K", "10-Q"]>;
-    country: z.ZodEnum<["US", "JP"]>;
-}, "strip", z.ZodTypeAny, {
-    symbol: string;
-    documentUrl: string;
-    documentType: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q";
-    country: "US" | "JP";
-}, {
-    symbol: string;
-    documentUrl: string;
-    documentType: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q";
-    country: "US" | "JP";
-}>;
 export declare const LocalPDFSchema: z.ZodObject<{
     symbol: z.ZodString;
     filePath: z.ZodString;
@@ -504,14 +488,14 @@ export declare const LocalPDFSchema: z.ZodObject<{
     country: z.ZodEnum<["US", "JP"]>;
 }, "strip", z.ZodTypeAny, {
     symbol: string;
+    filePath: string;
     documentType: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q";
     country: "US" | "JP";
-    filePath: string;
 }, {
     symbol: string;
+    filePath: string;
     documentType: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q";
     country: "US" | "JP";
-    filePath: string;
 }>;
 export declare const IRDocumentResponseSchema: z.ZodObject<{
     symbol: z.ZodString;
@@ -589,7 +573,6 @@ export type QuarterlyEarningsForecastResponse = z.infer<typeof QuarterlyEarnings
 export type AnnualEarningsForecastResponse = z.infer<typeof AnnualEarningsForecastSchema>;
 export type EarningsGuidanceResponse = z.infer<typeof EarningsGuidanceSchema>;
 export type ForecastSource = z.infer<typeof ForecastSourceSchema>;
-export type IRDocumentInput = z.infer<typeof IRDocumentSchema>;
 export type LocalPDFInput = z.infer<typeof LocalPDFSchema>;
 export type IRDocumentResponse = z.infer<typeof IRDocumentResponseSchema>;
 export declare const IRSummaryRequestSchema: z.ZodObject<{
@@ -597,16 +580,303 @@ export declare const IRSummaryRequestSchema: z.ZodObject<{
     companyName: z.ZodOptional<z.ZodString>;
     language: z.ZodDefault<z.ZodEnum<["ja", "en"]>>;
     extractionMode: z.ZodDefault<z.ZodOptional<z.ZodEnum<["text", "layout", "ocr", "auto"]>>>;
+    documentTypeFilter: z.ZodOptional<z.ZodEnum<["earnings_presentation", "annual_report", "quarterly_report", "10-K", "10-Q"]>>;
 }, "strip", z.ZodTypeAny, {
     symbol: string;
     language: "ja" | "en";
     extractionMode: "text" | "layout" | "ocr" | "auto";
     companyName?: string | undefined;
+    documentTypeFilter?: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q" | undefined;
 }, {
     symbol: string;
     companyName?: string | undefined;
     language?: "ja" | "en" | undefined;
     extractionMode?: "text" | "layout" | "ocr" | "auto" | undefined;
+    documentTypeFilter?: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q" | undefined;
+}>;
+export declare const QuarterlyEarningSummarySchema: z.ZodObject<{
+    executive: z.ZodString;
+    financial_comparison: z.ZodObject<{
+        revenue: z.ZodOptional<z.ZodObject<{
+            current: z.ZodOptional<z.ZodNumber>;
+            previous: z.ZodOptional<z.ZodNumber>;
+            change_percent: z.ZodOptional<z.ZodNumber>;
+            change_amount: z.ZodOptional<z.ZodNumber>;
+        }, "strip", z.ZodTypeAny, {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        }, {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        }>>;
+        operating_income: z.ZodOptional<z.ZodObject<{
+            current: z.ZodOptional<z.ZodNumber>;
+            previous: z.ZodOptional<z.ZodNumber>;
+            change_percent: z.ZodOptional<z.ZodNumber>;
+            change_amount: z.ZodOptional<z.ZodNumber>;
+        }, "strip", z.ZodTypeAny, {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        }, {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        }>>;
+        ordinary_income: z.ZodOptional<z.ZodObject<{
+            current: z.ZodOptional<z.ZodNumber>;
+            previous: z.ZodOptional<z.ZodNumber>;
+            change_percent: z.ZodOptional<z.ZodNumber>;
+            change_amount: z.ZodOptional<z.ZodNumber>;
+        }, "strip", z.ZodTypeAny, {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        }, {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        }>>;
+        operating_cash_flow: z.ZodOptional<z.ZodObject<{
+            current: z.ZodOptional<z.ZodNumber>;
+            previous: z.ZodOptional<z.ZodNumber>;
+            change_percent: z.ZodOptional<z.ZodNumber>;
+            change_amount: z.ZodOptional<z.ZodNumber>;
+        }, "strip", z.ZodTypeAny, {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        }, {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        }>>;
+    }, "strip", z.ZodTypeAny, {
+        revenue?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        operating_income?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        ordinary_income?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        operating_cash_flow?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+    }, {
+        revenue?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        operating_income?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        ordinary_income?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        operating_cash_flow?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+    }>;
+    guidance_changes: z.ZodObject<{
+        has_revision: z.ZodBoolean;
+        revision_type: z.ZodOptional<z.ZodEnum<["upward", "downward", "none"]>>;
+        details: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        has_revision: boolean;
+        revision_type?: "upward" | "downward" | "none" | undefined;
+        details?: string | undefined;
+    }, {
+        has_revision: boolean;
+        revision_type?: "upward" | "downward" | "none" | undefined;
+        details?: string | undefined;
+    }>;
+}, "strip", z.ZodTypeAny, {
+    executive: string;
+    financial_comparison: {
+        revenue?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        operating_income?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        ordinary_income?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        operating_cash_flow?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+    };
+    guidance_changes: {
+        has_revision: boolean;
+        revision_type?: "upward" | "downward" | "none" | undefined;
+        details?: string | undefined;
+    };
+}, {
+    executive: string;
+    financial_comparison: {
+        revenue?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        operating_income?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        ordinary_income?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+        operating_cash_flow?: {
+            current?: number | undefined;
+            previous?: number | undefined;
+            change_percent?: number | undefined;
+            change_amount?: number | undefined;
+        } | undefined;
+    };
+    guidance_changes: {
+        has_revision: boolean;
+        revision_type?: "upward" | "downward" | "none" | undefined;
+        details?: string | undefined;
+    };
+}>;
+export declare const AnnualReportSummarySchema: z.ZodObject<{
+    executive: z.ZodString;
+    business_situation: z.ZodObject<{
+        most_profitable_segment: z.ZodOptional<z.ZodString>;
+        segment_details: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        most_profitable_segment?: string | undefined;
+        segment_details?: string | undefined;
+    }, {
+        most_profitable_segment?: string | undefined;
+        segment_details?: string | undefined;
+    }>;
+    balance_sheet: z.ZodObject<{
+        equity_ratio: z.ZodOptional<z.ZodNumber>;
+        equity_ratio_assessment: z.ZodOptional<z.ZodEnum<["excellent", "good", "fair", "poor"]>>;
+        total_assets: z.ZodOptional<z.ZodNumber>;
+        net_assets: z.ZodOptional<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        equity_ratio?: number | undefined;
+        equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+        total_assets?: number | undefined;
+        net_assets?: number | undefined;
+    }, {
+        equity_ratio?: number | undefined;
+        equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+        total_assets?: number | undefined;
+        net_assets?: number | undefined;
+    }>;
+    profit_loss: z.ZodObject<{
+        revenue_improved: z.ZodOptional<z.ZodBoolean>;
+        profit_improved: z.ZodOptional<z.ZodBoolean>;
+        revenue_change_percent: z.ZodOptional<z.ZodNumber>;
+        profit_change_percent: z.ZodOptional<z.ZodNumber>;
+        details: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        details?: string | undefined;
+        revenue_improved?: boolean | undefined;
+        profit_improved?: boolean | undefined;
+        revenue_change_percent?: number | undefined;
+        profit_change_percent?: number | undefined;
+    }, {
+        details?: string | undefined;
+        revenue_improved?: boolean | undefined;
+        profit_improved?: boolean | undefined;
+        revenue_change_percent?: number | undefined;
+        profit_change_percent?: number | undefined;
+    }>;
+}, "strip", z.ZodTypeAny, {
+    executive: string;
+    business_situation: {
+        most_profitable_segment?: string | undefined;
+        segment_details?: string | undefined;
+    };
+    balance_sheet: {
+        equity_ratio?: number | undefined;
+        equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+        total_assets?: number | undefined;
+        net_assets?: number | undefined;
+    };
+    profit_loss: {
+        details?: string | undefined;
+        revenue_improved?: boolean | undefined;
+        profit_improved?: boolean | undefined;
+        revenue_change_percent?: number | undefined;
+        profit_change_percent?: number | undefined;
+    };
+}, {
+    executive: string;
+    business_situation: {
+        most_profitable_segment?: string | undefined;
+        segment_details?: string | undefined;
+    };
+    balance_sheet: {
+        equity_ratio?: number | undefined;
+        equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+        total_assets?: number | undefined;
+        net_assets?: number | undefined;
+    };
+    profit_loss: {
+        details?: string | undefined;
+        revenue_improved?: boolean | undefined;
+        profit_improved?: boolean | undefined;
+        revenue_change_percent?: number | undefined;
+        profit_change_percent?: number | undefined;
+    };
 }>;
 export declare const IRSummaryResponseSchema: z.ZodObject<{
     symbol: z.ZodString;
@@ -627,25 +897,289 @@ export declare const IRSummaryResponseSchema: z.ZodObject<{
         pdfType: "text" | "scanned" | "hybrid";
         extractionMethod: string;
     }>;
-    summary: z.ZodObject<{
+    summary: z.ZodUnion<[z.ZodObject<{
         executive: z.ZodString;
-        financial_highlights: z.ZodArray<z.ZodString, "many">;
-        business_segments: z.ZodArray<z.ZodString, "many">;
-        risks: z.ZodArray<z.ZodString, "many">;
-        outlook: z.ZodArray<z.ZodString, "many">;
+        financial_comparison: z.ZodObject<{
+            revenue: z.ZodOptional<z.ZodObject<{
+                current: z.ZodOptional<z.ZodNumber>;
+                previous: z.ZodOptional<z.ZodNumber>;
+                change_percent: z.ZodOptional<z.ZodNumber>;
+                change_amount: z.ZodOptional<z.ZodNumber>;
+            }, "strip", z.ZodTypeAny, {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            }, {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            }>>;
+            operating_income: z.ZodOptional<z.ZodObject<{
+                current: z.ZodOptional<z.ZodNumber>;
+                previous: z.ZodOptional<z.ZodNumber>;
+                change_percent: z.ZodOptional<z.ZodNumber>;
+                change_amount: z.ZodOptional<z.ZodNumber>;
+            }, "strip", z.ZodTypeAny, {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            }, {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            }>>;
+            ordinary_income: z.ZodOptional<z.ZodObject<{
+                current: z.ZodOptional<z.ZodNumber>;
+                previous: z.ZodOptional<z.ZodNumber>;
+                change_percent: z.ZodOptional<z.ZodNumber>;
+                change_amount: z.ZodOptional<z.ZodNumber>;
+            }, "strip", z.ZodTypeAny, {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            }, {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            }>>;
+            operating_cash_flow: z.ZodOptional<z.ZodObject<{
+                current: z.ZodOptional<z.ZodNumber>;
+                previous: z.ZodOptional<z.ZodNumber>;
+                change_percent: z.ZodOptional<z.ZodNumber>;
+                change_amount: z.ZodOptional<z.ZodNumber>;
+            }, "strip", z.ZodTypeAny, {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            }, {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            }>>;
+        }, "strip", z.ZodTypeAny, {
+            revenue?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            ordinary_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_cash_flow?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+        }, {
+            revenue?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            ordinary_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_cash_flow?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+        }>;
+        guidance_changes: z.ZodObject<{
+            has_revision: z.ZodBoolean;
+            revision_type: z.ZodOptional<z.ZodEnum<["upward", "downward", "none"]>>;
+            details: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
+            has_revision: boolean;
+            revision_type?: "upward" | "downward" | "none" | undefined;
+            details?: string | undefined;
+        }, {
+            has_revision: boolean;
+            revision_type?: "upward" | "downward" | "none" | undefined;
+            details?: string | undefined;
+        }>;
     }, "strip", z.ZodTypeAny, {
         executive: string;
-        financial_highlights: string[];
-        business_segments: string[];
-        risks: string[];
-        outlook: string[];
+        financial_comparison: {
+            revenue?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            ordinary_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_cash_flow?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+        };
+        guidance_changes: {
+            has_revision: boolean;
+            revision_type?: "upward" | "downward" | "none" | undefined;
+            details?: string | undefined;
+        };
     }, {
         executive: string;
-        financial_highlights: string[];
-        business_segments: string[];
-        risks: string[];
-        outlook: string[];
-    }>;
+        financial_comparison: {
+            revenue?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            ordinary_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_cash_flow?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+        };
+        guidance_changes: {
+            has_revision: boolean;
+            revision_type?: "upward" | "downward" | "none" | undefined;
+            details?: string | undefined;
+        };
+    }>, z.ZodObject<{
+        executive: z.ZodString;
+        business_situation: z.ZodObject<{
+            most_profitable_segment: z.ZodOptional<z.ZodString>;
+            segment_details: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
+            most_profitable_segment?: string | undefined;
+            segment_details?: string | undefined;
+        }, {
+            most_profitable_segment?: string | undefined;
+            segment_details?: string | undefined;
+        }>;
+        balance_sheet: z.ZodObject<{
+            equity_ratio: z.ZodOptional<z.ZodNumber>;
+            equity_ratio_assessment: z.ZodOptional<z.ZodEnum<["excellent", "good", "fair", "poor"]>>;
+            total_assets: z.ZodOptional<z.ZodNumber>;
+            net_assets: z.ZodOptional<z.ZodNumber>;
+        }, "strip", z.ZodTypeAny, {
+            equity_ratio?: number | undefined;
+            equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+            total_assets?: number | undefined;
+            net_assets?: number | undefined;
+        }, {
+            equity_ratio?: number | undefined;
+            equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+            total_assets?: number | undefined;
+            net_assets?: number | undefined;
+        }>;
+        profit_loss: z.ZodObject<{
+            revenue_improved: z.ZodOptional<z.ZodBoolean>;
+            profit_improved: z.ZodOptional<z.ZodBoolean>;
+            revenue_change_percent: z.ZodOptional<z.ZodNumber>;
+            profit_change_percent: z.ZodOptional<z.ZodNumber>;
+            details: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
+            details?: string | undefined;
+            revenue_improved?: boolean | undefined;
+            profit_improved?: boolean | undefined;
+            revenue_change_percent?: number | undefined;
+            profit_change_percent?: number | undefined;
+        }, {
+            details?: string | undefined;
+            revenue_improved?: boolean | undefined;
+            profit_improved?: boolean | undefined;
+            revenue_change_percent?: number | undefined;
+            profit_change_percent?: number | undefined;
+        }>;
+    }, "strip", z.ZodTypeAny, {
+        executive: string;
+        business_situation: {
+            most_profitable_segment?: string | undefined;
+            segment_details?: string | undefined;
+        };
+        balance_sheet: {
+            equity_ratio?: number | undefined;
+            equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+            total_assets?: number | undefined;
+            net_assets?: number | undefined;
+        };
+        profit_loss: {
+            details?: string | undefined;
+            revenue_improved?: boolean | undefined;
+            profit_improved?: boolean | undefined;
+            revenue_change_percent?: number | undefined;
+            profit_change_percent?: number | undefined;
+        };
+    }, {
+        executive: string;
+        business_situation: {
+            most_profitable_segment?: string | undefined;
+            segment_details?: string | undefined;
+        };
+        balance_sheet: {
+            equity_ratio?: number | undefined;
+            equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+            total_assets?: number | undefined;
+            net_assets?: number | undefined;
+        };
+        profit_loss: {
+            details?: string | undefined;
+            revenue_improved?: boolean | undefined;
+            profit_improved?: boolean | undefined;
+            revenue_change_percent?: number | undefined;
+            profit_change_percent?: number | undefined;
+        };
+    }>]>;
     key_metrics: z.ZodObject<{
         revenue: z.ZodOptional<z.ZodNumber>;
         profit: z.ZodOptional<z.ZodNumber>;
@@ -667,10 +1201,56 @@ export declare const IRSummaryResponseSchema: z.ZodObject<{
     documentType: string;
     summary: {
         executive: string;
-        financial_highlights: string[];
-        business_segments: string[];
-        risks: string[];
-        outlook: string[];
+        financial_comparison: {
+            revenue?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            ordinary_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_cash_flow?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+        };
+        guidance_changes: {
+            has_revision: boolean;
+            revision_type?: "upward" | "downward" | "none" | undefined;
+            details?: string | undefined;
+        };
+    } | {
+        executive: string;
+        business_situation: {
+            most_profitable_segment?: string | undefined;
+            segment_details?: string | undefined;
+        };
+        balance_sheet: {
+            equity_ratio?: number | undefined;
+            equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+            total_assets?: number | undefined;
+            net_assets?: number | undefined;
+        };
+        profit_loss: {
+            details?: string | undefined;
+            revenue_improved?: boolean | undefined;
+            profit_improved?: boolean | undefined;
+            revenue_change_percent?: number | undefined;
+            profit_change_percent?: number | undefined;
+        };
     };
     processingInfo: {
         pageCount: number;
@@ -690,10 +1270,56 @@ export declare const IRSummaryResponseSchema: z.ZodObject<{
     documentType: string;
     summary: {
         executive: string;
-        financial_highlights: string[];
-        business_segments: string[];
-        risks: string[];
-        outlook: string[];
+        financial_comparison: {
+            revenue?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            ordinary_income?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+            operating_cash_flow?: {
+                current?: number | undefined;
+                previous?: number | undefined;
+                change_percent?: number | undefined;
+                change_amount?: number | undefined;
+            } | undefined;
+        };
+        guidance_changes: {
+            has_revision: boolean;
+            revision_type?: "upward" | "downward" | "none" | undefined;
+            details?: string | undefined;
+        };
+    } | {
+        executive: string;
+        business_situation: {
+            most_profitable_segment?: string | undefined;
+            segment_details?: string | undefined;
+        };
+        balance_sheet: {
+            equity_ratio?: number | undefined;
+            equity_ratio_assessment?: "excellent" | "good" | "fair" | "poor" | undefined;
+            total_assets?: number | undefined;
+            net_assets?: number | undefined;
+        };
+        profit_loss: {
+            details?: string | undefined;
+            revenue_improved?: boolean | undefined;
+            profit_improved?: boolean | undefined;
+            revenue_change_percent?: number | undefined;
+            profit_change_percent?: number | undefined;
+        };
     };
     processingInfo: {
         pageCount: number;
@@ -710,4 +1336,6 @@ export declare const IRSummaryResponseSchema: z.ZodObject<{
 }>;
 export type IRSummaryRequest = z.infer<typeof IRSummaryRequestSchema>;
 export type IRSummaryResponse = z.infer<typeof IRSummaryResponseSchema>;
+export type QuarterlyEarningSummary = z.infer<typeof QuarterlyEarningSummarySchema>;
+export type AnnualReportSummary = z.infer<typeof AnnualReportSummarySchema>;
 //# sourceMappingURL=schema.d.ts.map

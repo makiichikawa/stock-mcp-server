@@ -155,49 +155,64 @@ export class IRSummaryService {
   }
 
   private generateExecutiveSummary(text: string, language: string = 'ja'): string {
-    // 文書の冒頭部分から重要な情報を抽出して3-5行の要約を生成
-    const lines = text.split('\n').filter(line => line.trim().length > 20);
-    const keyLines = lines.slice(0, 20); // 最初の20行から重要情報を抽出
-    
     // 実際の文書言語を判定
     const actualLanguage = this.detectLanguage(text);
-    
-    // ハイライトや要点を抽出
-    const highlightPatterns = actualLanguage === 'ja'
-      ? [
-          /(?:ハイライト|要点|重要|ポイント)[：:\s]*([^\n]{30,200})/gi,
-          /(?:業績|売上|利益)[：:\s]*([^\n]{30,200})/gi
-        ]
-      : [
-          /(?:highlights?|key points?|summary)[：:\s]*([^\n]{30,200})/gi,
-          /(?:revenue|income|profit)[：:\s]*([^\n]{30,200})/gi
-        ];
-    
-    const highlights: string[] = [];
-    for (const pattern of highlightPatterns) {
-      const matches = Array.from(text.matchAll(pattern));
-      for (const match of matches.slice(0, 3)) {
-        if (match[1] && match[1].trim().length > 20) {
-          highlights.push(match[1].trim());
-        }
-      }
-    }
     
     // 英語文書の場合は日本語で要約を生成
     if (actualLanguage === 'en') {
       return this.generateJapaneseSummaryFromEnglishText(text);
     }
     
-    // 3-5行の要約を生成
-    if (highlights.length > 0) {
-      return highlights.slice(0, 5).join(' ');
+    // 日本語決算短信の場合の改善された要約生成
+    // 決算短信の要約部分を探す
+    const summaryPatterns = [
+      // 決算短信冒頭の要約を探す（会社名の後の業績説明）
+      /(?:当第１四半期|当四半期|当期)[\s\S]{200,800}?(?:となりました|増収|減収|増益|減益|黒字|赤字)/gi,
+      // 経営成績に関する説明
+      /経営成績に関する説明[\s\S]{200,800}?(?:となりました|増収|減収|増益|減益|黒字|赤字)/gi,
+      // 業績サマリー
+      /(?:業績|売上高|営業利益).*?(?:前年同期比|前期比).*?(?:\d+\.?\d*%|増|減).*?(?:となりました|達成|計上)/gi,
+    ];
+    
+    for (const pattern of summaryPatterns) {
+      const matches = Array.from(text.matchAll(pattern));
+      if (matches.length > 0) {
+        let summary = matches[0][0];
+        // 長すぎる場合は適切な長さに調整
+        if (summary.length > 300) {
+          const sentences = summary.split(/[。．]/);
+          summary = sentences.slice(0, 3).join('。') + '。';
+        }
+        if (summary.length > 50 && summary.length < 500) {
+          return summary;
+        }
+      }
     }
     
-    // フォールバック: 最初の有意な文から要約を作成
-    const meaningfulText = keyLines.join(' ').substring(0, 500);
-    return language === 'ja'
-      ? `当期の業績および事業概況に関する詳細情報が含まれています。${meaningfulText.substring(0, 200)}...などの重要なポイントが報告されています。`
-      : `Detailed information about current period performance and business overview is included. ${meaningfulText.substring(0, 200)}... and other important points are reported.`;
+    // 財務数値から要約を構築
+    const revenueMatch = text.match(/売上高\s*([0-9,]+)\s*([0-9,]+)/);
+    const operatingMatch = text.match(/営業利益\s*([0-9,]+)\s*([0-9,]+)/);
+    
+    if (revenueMatch && operatingMatch) {
+      const revenueCurrent = parseInt(revenueMatch[1].replace(/,/g, '')) / 100; // 億円に変換
+      const revenuePrevious = parseInt(revenueMatch[2].replace(/,/g, '')) / 100;
+      const operatingCurrent = parseInt(operatingMatch[1].replace(/,/g, '')) / 100;
+      const operatingPrevious = parseInt(operatingMatch[2].replace(/,/g, '')) / 100;
+      
+      const revenueGrowthNum = (revenueCurrent - revenuePrevious) / revenuePrevious * 100;
+      const operatingGrowthNum = (operatingCurrent - operatingPrevious) / operatingPrevious * 100;
+      const revenueGrowth = revenueGrowthNum.toFixed(1);
+      const operatingGrowth = operatingGrowthNum.toFixed(1);
+      
+      // 会社名を抽出（可能であれば）
+      const companyMatch = text.match(/([^。\n]{5,30}?)(?:株式会社|ホールディングス)/);
+      const company = companyMatch ? companyMatch[1] + (companyMatch[0].includes('ホールディングス') ? 'ホールディングス' : '株式会社') : '';
+      
+      return `${company}の当四半期は、売上高${revenueCurrent.toLocaleString()}億円（前年同期比${revenueGrowthNum > 0 ? '+' : ''}${revenueGrowth}%）、営業利益${operatingCurrent.toLocaleString()}億円（同${operatingGrowthNum > 0 ? '+' : ''}${operatingGrowth}%）と${revenueGrowthNum > 0 && operatingGrowthNum > 0 ? '増収増益' : revenueGrowthNum > 0 ? '増収' : operatingGrowthNum > 0 ? '増益' : '減収減益'}を達成しました。`;
+    }
+    
+    // フォールバック: 基本的な要約
+    return '当四半期の業績に関する詳細情報が含まれており、財務実績や事業の進捗状況について報告されています。';
   }
 
   private generateJapaneseSummaryFromEnglishText(text: string): string {
@@ -503,22 +518,36 @@ export class IRSummaryService {
       switch (metricType) {
         case 'revenue':
           patterns = [
+            // 決算短信表形式: "売上高516,775548,701" または "売上高 516,775 548,701"
+            /売上高\s*([0-9,]+)\s*([0-9,]+)/gi,
+            // 通常文章形式
             /売上高[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前年同期[^\n]*?([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
             /売上収益[：:\s]*([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前期[^\n]*?([0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
           ];
           break;
         case 'operating_income':
           patterns = [
+            // 決算短信表形式: "営業利益30,35436,786"
+            /営業利益\s*([+-]?[0-9,]+)\s*([+-]?[0-9,]+)/gi,
+            // 通常文章形式
             /営業利益[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前年同期[^\n]*?([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
           ];
           break;
         case 'ordinary_income':
           patterns = [
+            // 決算短信表形式: "経常利益36,82235,919"
+            /経常利益\s*([+-]?[0-9,]+)\s*([+-]?[0-9,]+)/gi,
+            // 通常文章形式
             /経常利益[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前年同期[^\n]*?([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
           ];
           break;
         case 'operating_cash_flow':
           patterns = [
+            // 決算短信表形式: "営業活動によるキャッシュフロー109,32694,401"
+            /営業活動によるキャッシュ[・･]?フロー\s*([+-]?[0-9,]+)\s*([+-]?[0-9,]+)/gi,
+            // 短縮形式: "営業CF"
+            /営業CF\s*([+-]?[0-9,]+)\s*([+-]?[0-9,]+)/gi,
+            // 通常文章形式
             /営業活動によるキャッシュフロー[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前年同期[^\n]*?([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
             /営業CF[：:\s]*([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)[^\n]*?前期[^\n]*?([+-]?[0-9,]+(?:\.[0-9]+)?)\s*(?:億円|千万円|兆円|円)/gi,
           ];
@@ -590,15 +619,24 @@ export class IRSummaryService {
           let currentValue = current;
           let previousValue = previous;
           
-          // 数値の単位を統一（百万ドル単位）
-          // PGYの場合：千ドル単位で記載されているので、百万ドル単位に変換
-          // AAPLの場合：既に百万ドル単位で記載
-          if (current > 50000) {
-            // 50,000以上の場合は千ドル単位と判定（PGY形式）
-            currentValue = current / 1000;
-            previousValue = previous / 1000;
+          // 数値の単位を統一
+          if (language === 'ja') {
+            // 日本株の場合：百万円単位を億円単位に変換（表示用）
+            if (current > 1000) {
+              // 1,000以上の場合は百万円単位と判定 → 億円単位に変換
+              currentValue = Math.round(current / 100);
+              previousValue = Math.round(previous / 100);
+            }
+          } else {
+            // 米国株の場合の処理
+            // PGYの場合：千ドル単位で記載されているので、百万ドル単位に変換
+            // AAPLの場合：既に百万ドル単位で記載
+            if (current > 50000) {
+              // 50,000以上の場合は千ドル単位と判定（PGY形式）
+              currentValue = current / 1000;
+              previousValue = previous / 1000;
+            }
           }
-          // 50,000未満の場合は既に百万ドル単位と判定（AAPL形式）
           
           const changeAmount = currentValue - previousValue;
           const changePercent = previousValue !== 0 ? (changeAmount / previousValue) * 100 : 0;

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IRSummaryResponseSchema = exports.IRSummaryRequestSchema = exports.IRDocumentResponseSchema = exports.LocalPDFSchema = exports.IRDocumentSchema = exports.EarningsGuidanceSchema = exports.GuidanceItemSchema = exports.AnnualEarningsForecastSchema = exports.AnnualForecastItemSchema = exports.QuarterlyEarningsForecastSchema = exports.QuarterlyForecastItemSchema = exports.ForecastSourceSchema = exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
+exports.IRSummaryResponseSchema = exports.AnnualReportSummarySchema = exports.QuarterlyEarningSummarySchema = exports.IRSummaryRequestSchema = exports.IRDocumentResponseSchema = exports.LocalPDFSchema = exports.EarningsGuidanceSchema = exports.GuidanceItemSchema = exports.AnnualEarningsForecastSchema = exports.AnnualForecastItemSchema = exports.QuarterlyEarningsForecastSchema = exports.QuarterlyForecastItemSchema = exports.ForecastSourceSchema = exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
 const zod_1 = require("zod");
 exports.StockSymbolSchema = zod_1.z.object({
     symbol: zod_1.z.string().min(1, 'Stock symbol is required'),
@@ -121,12 +121,6 @@ exports.EarningsGuidanceSchema = zod_1.z.object({
     timestamp: zod_1.z.string(),
 });
 // IR文書処理用スキーマ
-exports.IRDocumentSchema = zod_1.z.object({
-    symbol: zod_1.z.string().min(1).max(10),
-    documentUrl: zod_1.z.string().url(),
-    documentType: zod_1.z.enum(['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q']),
-    country: zod_1.z.enum(['US', 'JP']),
-});
 exports.LocalPDFSchema = zod_1.z.object({
     symbol: zod_1.z.string().min(1).max(10),
     filePath: zod_1.z.string().min(1),
@@ -156,6 +150,63 @@ exports.IRSummaryRequestSchema = zod_1.z.object({
     companyName: zod_1.z.string().optional(),
     language: zod_1.z.enum(['ja', 'en']).default('ja'),
     extractionMode: zod_1.z.enum(['text', 'layout', 'ocr', 'auto']).optional().default('auto'),
+    documentTypeFilter: zod_1.z.enum(['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q']).optional(),
+});
+// 決算短信用の要約スキーマ
+exports.QuarterlyEarningSummarySchema = zod_1.z.object({
+    executive: zod_1.z.string(), // 全文要約（3-5行）
+    financial_comparison: zod_1.z.object({
+        revenue: zod_1.z.object({
+            current: zod_1.z.number().optional(),
+            previous: zod_1.z.number().optional(),
+            change_percent: zod_1.z.number().optional(),
+            change_amount: zod_1.z.number().optional(),
+        }).optional(),
+        operating_income: zod_1.z.object({
+            current: zod_1.z.number().optional(),
+            previous: zod_1.z.number().optional(),
+            change_percent: zod_1.z.number().optional(),
+            change_amount: zod_1.z.number().optional(),
+        }).optional(),
+        ordinary_income: zod_1.z.object({
+            current: zod_1.z.number().optional(),
+            previous: zod_1.z.number().optional(),
+            change_percent: zod_1.z.number().optional(),
+            change_amount: zod_1.z.number().optional(),
+        }).optional(),
+        operating_cash_flow: zod_1.z.object({
+            current: zod_1.z.number().optional(),
+            previous: zod_1.z.number().optional(),
+            change_percent: zod_1.z.number().optional(),
+            change_amount: zod_1.z.number().optional(),
+        }).optional(),
+    }),
+    guidance_changes: zod_1.z.object({
+        has_revision: zod_1.z.boolean(),
+        revision_type: zod_1.z.enum(['upward', 'downward', 'none']).optional(),
+        details: zod_1.z.string().optional(),
+    }),
+});
+// 有価証券報告書用の要約スキーマ
+exports.AnnualReportSummarySchema = zod_1.z.object({
+    executive: zod_1.z.string(), // 全文要約（3-5行）
+    business_situation: zod_1.z.object({
+        most_profitable_segment: zod_1.z.string().optional(),
+        segment_details: zod_1.z.string().optional(),
+    }),
+    balance_sheet: zod_1.z.object({
+        equity_ratio: zod_1.z.number().optional(), // 純資産比率
+        equity_ratio_assessment: zod_1.z.enum(['excellent', 'good', 'fair', 'poor']).optional(),
+        total_assets: zod_1.z.number().optional(),
+        net_assets: zod_1.z.number().optional(),
+    }),
+    profit_loss: zod_1.z.object({
+        revenue_improved: zod_1.z.boolean().optional(),
+        profit_improved: zod_1.z.boolean().optional(),
+        revenue_change_percent: zod_1.z.number().optional(),
+        profit_change_percent: zod_1.z.number().optional(),
+        details: zod_1.z.string().optional(),
+    }),
 });
 exports.IRSummaryResponseSchema = zod_1.z.object({
     symbol: zod_1.z.string(),
@@ -166,13 +217,10 @@ exports.IRSummaryResponseSchema = zod_1.z.object({
         processingTime: zod_1.z.number(),
         pageCount: zod_1.z.number(),
     }),
-    summary: zod_1.z.object({
-        executive: zod_1.z.string(), // 3-5行の全文要約
-        financial_highlights: zod_1.z.array(zod_1.z.string()), // 業績ハイライト
-        business_segments: zod_1.z.array(zod_1.z.string()), // 事業セグメント別分析
-        risks: zod_1.z.array(zod_1.z.string()), // リスク要因
-        outlook: zod_1.z.array(zod_1.z.string()), // 今後の見通し
-    }),
+    summary: zod_1.z.union([
+        exports.QuarterlyEarningSummarySchema,
+        exports.AnnualReportSummarySchema,
+    ]),
     key_metrics: zod_1.z.object({
         revenue: zod_1.z.number().optional(),
         profit: zod_1.z.number().optional(),

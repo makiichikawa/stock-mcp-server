@@ -8,7 +8,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { StockService } from './services/stockService';
 import { IRService } from './services/irService';
-import { StockSymbolSchema, StockScreenerSchema, LocalPDFSchema } from './types/schema';
+import { IRSummaryService } from './services/irSummaryService';
+import { StockSymbolSchema, StockScreenerSchema, LocalPDFSchema, IRSummaryRequestSchema } from './types/schema';
 
 const server = new Server(
   {
@@ -24,6 +25,7 @@ const server = new Server(
 
 const stockService = new StockService();
 const irService = new IRService();
+const irSummaryService = new IRSummaryService();
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -163,6 +165,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             symbol: {
               type: 'string',
               description: 'Stock symbol (e.g., AAPL, GOOGL, TSLA)',
+            },
+          },
+          required: ['symbol'],
+        },
+      },
+      {
+        name: 'summarize_ir_information',
+        description: 'Generate comprehensive IR summary from local PDF documents for Japanese and US stocks',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            symbol: {
+              type: 'string',
+              description: 'Stock symbol (e.g., 9202 for ANA, AAPL for Apple)',
+            },
+            companyName: {
+              type: 'string',
+              description: 'Company name (optional)',
+            },
+            language: {
+              type: 'string',
+              enum: ['ja', 'en'],
+              default: 'ja',
+              description: 'Output language',
+            },
+            documentTypeFilter: {
+              type: 'string',
+              enum: ['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q'],
+              description: 'Filter by specific document type (optional)',
             },
           },
           required: ['symbol'],
@@ -334,6 +365,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
+
+    if (name === 'summarize_ir_information') {
+      const validatedArgs = IRSummaryRequestSchema.parse(args);
+      const result = await irSummaryService.generateIRSummary(validatedArgs);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    }
 
     if (name === 'extract_local_pdf') {
       const validatedArgs = LocalPDFSchema.parse(args);

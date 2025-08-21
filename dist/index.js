@@ -163,31 +163,32 @@ server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
                 },
             },
             {
-                name: 'extract_ir_document',
-                description: 'Download and extract text from IR documents (PDF) from a URL',
+                name: 'summarize_ir_information',
+                description: 'Generate comprehensive IR summary from local PDF documents for Japanese and US stocks',
                 inputSchema: {
                     type: 'object',
                     properties: {
                         symbol: {
                             type: 'string',
-                            description: 'Stock symbol (e.g., AAPL, 7203)',
+                            description: 'Stock symbol (e.g., 9202 for ANA, AAPL for Apple)',
                         },
-                        documentUrl: {
+                        companyName: {
                             type: 'string',
-                            description: 'URL of the PDF document to extract',
+                            description: 'Company name (optional)',
                         },
-                        documentType: {
+                        language: {
+                            type: 'string',
+                            enum: ['ja', 'en'],
+                            default: 'ja',
+                            description: 'Output language',
+                        },
+                        documentTypeFilter: {
                             type: 'string',
                             enum: ['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q'],
-                            description: 'Type of IR document',
-                        },
-                        country: {
-                            type: 'string',
-                            enum: ['US', 'JP'],
-                            description: 'Country of the company (US or JP)',
+                            description: 'Filter by specific document type (optional)',
                         },
                     },
-                    required: ['symbol', 'documentUrl', 'documentType', 'country'],
+                    required: ['symbol'],
                 },
             },
             {
@@ -216,29 +217,6 @@ server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
                         },
                     },
                     required: ['symbol', 'filePath', 'documentType', 'country'],
-                },
-            },
-            {
-                name: 'summarize_ir_information',
-                description: 'Generate a comprehensive summary of IR information from available documents',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        symbol: {
-                            type: 'string',
-                            description: 'Stock symbol (e.g., AAPL, 7203, 6758)',
-                        },
-                        companyName: {
-                            type: 'string',
-                            description: 'Company name (optional)',
-                        },
-                        language: {
-                            type: 'string',
-                            enum: ['ja', 'en'],
-                            description: 'Summary language (ja for Japanese, en for English)',
-                        },
-                    },
-                    required: ['symbol'],
                 },
             },
         ],
@@ -358,9 +336,9 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
                 ],
             };
         }
-        if (name === 'extract_ir_document') {
-            const validatedArgs = schema_1.IRDocumentSchema.parse(args);
-            const result = await irService.downloadAndExtractPDF(validatedArgs);
+        if (name === 'summarize_ir_information') {
+            const validatedArgs = schema_1.IRSummaryRequestSchema.parse(args);
+            const result = await irSummaryService.generateIRSummary(validatedArgs);
             return {
                 content: [
                     {
@@ -373,18 +351,6 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
         if (name === 'extract_local_pdf') {
             const validatedArgs = schema_1.LocalPDFSchema.parse(args);
             const result = await irService.extractFromLocalPDF(validatedArgs.filePath, validatedArgs.symbol, validatedArgs.documentType, validatedArgs.country);
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(result, null, 2),
-                    },
-                ],
-            };
-        }
-        if (name === 'summarize_ir_information') {
-            const validatedArgs = schema_1.IRSummaryRequestSchema.parse(args);
-            const result = await irSummaryService.generateIRSummary(validatedArgs);
             return {
                 content: [
                     {
