@@ -130,18 +130,58 @@ ir-summary-{SYMBOL}-requirements-format-{YYYY-MM-DD}.md
 **評価**: {総合的な損益評価}
 ```
 
-### 3.4 統合分析セクション
+### 3.4 定性評価セクション
 
 #### 必須項目
 ```markdown
-## 🎯 3. 統合分析
+## 📈 3. 定性評価
 
-### 3.1 財務ハイライト
+### 3.1 経営ガイダンス
+
+#### 売上見通し
+{売上見通しの内容}
+
+#### 戦略的イニシアチブ
+1. **{イニシアチブ1}**: {説明}
+2. **{イニシアチブ2}**: {説明}
+3. **{イニシアチブ3}**: {説明}
+
+#### 経営陣のトーン
+**{optimistic/cautious/neutral}** - {トーンの詳細説明}
+
+#### リスク警告
+1. **{リスク1}**: {説明}
+2. **{リスク2}**: {説明}
+3. **{リスク3}**: {説明}
+
+### 3.2 競合分析
+
+#### 競合他社への言及
+| 競合企業 | 言及内容 | トーン | 分析 |
+|---------|----------|-------|------|
+| {企業名} | {コンテキスト概要} | {confident/concerned/neutral} | {分析} |
+
+#### 市場ポジション
+{市場での立ち位置の説明}
+
+#### 競争優位性
+1. **{優位性1}**: {説明}
+2. **{優位性2}**: {説明}
+3. **{優位性3}**: {説明}
+```
+
+### 3.5 統合分析セクション
+
+#### 必須項目
+```markdown
+## 🎯 4. 統合分析
+
+### 4.1 財務ハイライト
 - **収益性**: {営業利益率等の収益性指標}
 - **成長性**: {成長率の分析}
 - **安定性**: {安定性の評価}
 
-### 3.2 投資判断ポイント
+### 4.2 投資判断ポイント
 
 #### ✅ 強み
 1. **{強み1}**: {説明}
@@ -159,24 +199,24 @@ ir-summary-{SYMBOL}-requirements-format-{YYYY-MM-DD}.md
 - **リスク評価**: {リスクレベル}
 ```
 
-### 3.5 データ品質セクション
+### 3.6 データ品質セクション
 
 #### 必須項目
 ```markdown
-## 📋 4. データ品質
+## 📋 5. データ品質
 
 - **テキスト抽出精度**: {精度}%（要件基準{達成/未達成}）
 - **数値抽出精度**: {精度}%以上（要件基準{達成/未達成}）
 - **要約品質**: 要件定義書準拠の構造化要約
 ```
 
-### 3.6 生データセクション
+### 3.7 生データセクション
 
 #### 必須項目
 ```markdown
-## 📊 5. 生データ（JSON形式）
+## 📊 6. 生データ（JSON形式）
 
-### 5.1 決算短信データ
+### 6.1 決算短信データ
 ```json
 {
   "financial_comparison": {
@@ -192,7 +232,7 @@ ir-summary-{SYMBOL}-requirements-format-{YYYY-MM-DD}.md
 }
 ```
 
-### 5.2 有価証券報告書データ
+### 6.2 有価証券報告書データ
 ```json
 {
   "business_situation": {
@@ -212,6 +252,29 @@ ir-summary-{SYMBOL}-requirements-format-{YYYY-MM-DD}.md
     "revenue_growth": 数値,
     "operating_income_growth": 数値,
     "net_income_growth": 数値
+  }
+}
+```
+
+### 6.3 定性評価データ
+```json
+{
+  "management_guidance": {
+    "revenue_outlook": "string",
+    "strategic_initiatives": ["string", "string"],
+    "management_tone": "optimistic/cautious/neutral",
+    "risk_warnings": ["string", "string"]
+  },
+  "competitive_analysis": {
+    "competitor_mentions": [
+      {
+        "competitor": "string",
+        "context": "string", 
+        "tone": "confident/concerned/neutral"
+      }
+    ],
+    "market_position": "string",
+    "competitive_advantages": ["string", "string"]
   }
 }
 ```

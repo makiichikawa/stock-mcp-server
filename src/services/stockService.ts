@@ -1,6 +1,6 @@
 import yahooFinance from 'yahoo-finance2';
-import { StockPriceResponse, StockSymbolInput, FinancialDataResponse, ProfitabilityTurnAroundResponse, StockScreenerInput, QuarterlyEarningsForecastResponse, AnnualEarningsForecastResponse, EarningsGuidanceResponse } from '../types/schema.js';
-import { SecService } from './secService.js';
+import { StockPriceResponse, StockSymbolInput, FinancialDataResponse, ProfitabilityTurnAroundResponse, StockScreenerInput, QuarterlyEarningsForecastResponse, AnnualEarningsForecastResponse, EarningsGuidanceResponse } from '../types/schema';
+import { SecService } from './secService';
 
 export class StockService {
   private secService: SecService;
