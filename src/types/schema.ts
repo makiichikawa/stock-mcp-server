@@ -262,3 +262,11 @@ export type IRSummaryRequest = z.infer<typeof IRSummaryRequestSchema>;
 export type IRSummaryResponse = z.infer<typeof IRSummaryResponseSchema>;
 export type QuarterlyEarningSummary = z.infer<typeof QuarterlyEarningSummarySchema>;
 export type AnnualReportSummary = z.infer<typeof AnnualReportSummarySchema>;
+
+// 市場環境データ用スキーマ
+export const MarketEnvironmentRequestSchema = z.object({
+  region: z.enum(['US', 'JP', 'GLOBAL']),
+  timeframe: z.enum(['1M', '3M', '1Y']).optional(),
+});
+
+export type MarketEnvironmentRequest = z.infer<typeof MarketEnvironmentRequestSchema>;

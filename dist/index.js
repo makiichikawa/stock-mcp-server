@@ -7,6 +7,7 @@ const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
 const stockService_1 = require("./services/stockService");
 const irService_1 = require("./services/irService");
 const irSummaryService_1 = require("./services/irSummaryService");
+const marketEnvironmentService_1 = require("./services/marketEnvironmentService");
 const schema_1 = require("./types/schema");
 const server = new index_js_1.Server({
     name: 'stock-mcp-server',
@@ -19,6 +20,7 @@ const server = new index_js_1.Server({
 const stockService = new stockService_1.StockService();
 const irService = new irService_1.IRService();
 const irSummaryService = new irSummaryService_1.IRSummaryService();
+const marketEnvironmentService = new marketEnvironmentService_1.MarketEnvironmentService();
 server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
     return {
         tools: [
@@ -219,6 +221,26 @@ server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
                     required: ['symbol', 'filePath', 'documentType', 'country'],
                 },
             },
+            {
+                name: 'get_market_environment',
+                description: '現在の市場環境とマクロ経済指標を取得 (金利、ドル円、NYダウ、VIX等)',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        region: {
+                            type: 'string',
+                            enum: ['US', 'JP', 'GLOBAL'],
+                            description: '対象地域 (US: 米国中心、JP: 日本中心、GLOBAL: 世界)',
+                        },
+                        timeframe: {
+                            type: 'string',
+                            enum: ['1M', '3M', '1Y'],
+                            description: '分析期間 (オプション)',
+                        },
+                    },
+                    required: ['region'],
+                },
+            },
         ],
     };
 });
@@ -351,6 +373,18 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
         if (name === 'extract_local_pdf') {
             const validatedArgs = schema_1.LocalPDFSchema.parse(args);
             const result = await irService.extractFromLocalPDF(validatedArgs.filePath, validatedArgs.symbol, validatedArgs.documentType, validatedArgs.country);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+            };
+        }
+        if (name === 'get_market_environment') {
+            const validatedArgs = schema_1.MarketEnvironmentRequestSchema.parse(args);
+            const result = await marketEnvironmentService.getMarketEnvironment(validatedArgs);
             return {
                 content: [
                     {

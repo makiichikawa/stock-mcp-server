@@ -1338,4 +1338,15 @@ export type IRSummaryRequest = z.infer<typeof IRSummaryRequestSchema>;
 export type IRSummaryResponse = z.infer<typeof IRSummaryResponseSchema>;
 export type QuarterlyEarningSummary = z.infer<typeof QuarterlyEarningSummarySchema>;
 export type AnnualReportSummary = z.infer<typeof AnnualReportSummarySchema>;
+export declare const MarketEnvironmentRequestSchema: z.ZodObject<{
+    region: z.ZodEnum<["US", "JP", "GLOBAL"]>;
+    timeframe: z.ZodOptional<z.ZodEnum<["1M", "3M", "1Y"]>>;
+}, "strip", z.ZodTypeAny, {
+    region: "US" | "JP" | "GLOBAL";
+    timeframe?: "1M" | "3M" | "1Y" | undefined;
+}, {
+    region: "US" | "JP" | "GLOBAL";
+    timeframe?: "1M" | "3M" | "1Y" | undefined;
+}>;
+export type MarketEnvironmentRequest = z.infer<typeof MarketEnvironmentRequestSchema>;
 //# sourceMappingURL=schema.d.ts.map

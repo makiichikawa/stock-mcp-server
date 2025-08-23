@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IRSummaryResponseSchema = exports.AnnualReportSummarySchema = exports.QuarterlyEarningSummarySchema = exports.IRSummaryRequestSchema = exports.IRDocumentResponseSchema = exports.LocalPDFSchema = exports.EarningsGuidanceSchema = exports.GuidanceItemSchema = exports.AnnualEarningsForecastSchema = exports.AnnualForecastItemSchema = exports.QuarterlyEarningsForecastSchema = exports.QuarterlyForecastItemSchema = exports.ForecastSourceSchema = exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
+exports.MarketEnvironmentRequestSchema = exports.IRSummaryResponseSchema = exports.AnnualReportSummarySchema = exports.QuarterlyEarningSummarySchema = exports.IRSummaryRequestSchema = exports.IRDocumentResponseSchema = exports.LocalPDFSchema = exports.EarningsGuidanceSchema = exports.GuidanceItemSchema = exports.AnnualEarningsForecastSchema = exports.AnnualForecastItemSchema = exports.QuarterlyEarningsForecastSchema = exports.QuarterlyForecastItemSchema = exports.ForecastSourceSchema = exports.StockScreenerSchema = exports.ProfitabilityTurnAroundSchema = exports.FinancialDataResponseSchema = exports.StockPriceResponseSchema = exports.StockSymbolSchema = void 0;
 const zod_1 = require("zod");
 exports.StockSymbolSchema = zod_1.z.object({
     symbol: zod_1.z.string().min(1, 'Stock symbol is required'),
@@ -228,5 +228,10 @@ exports.IRSummaryResponseSchema = zod_1.z.object({
     }),
     extractedText: zod_1.z.string().optional(), // デバッグ用
     timestamp: zod_1.z.string(),
+});
+// 市場環境データ用スキーマ
+exports.MarketEnvironmentRequestSchema = zod_1.z.object({
+    region: zod_1.z.enum(['US', 'JP', 'GLOBAL']),
+    timeframe: zod_1.z.enum(['1M', '3M', '1Y']).optional(),
 });
 //# sourceMappingURL=schema.js.map

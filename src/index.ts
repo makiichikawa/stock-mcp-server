@@ -9,7 +9,8 @@ import {
 import { StockService } from './services/stockService';
 import { IRService } from './services/irService';
 import { IRSummaryService } from './services/irSummaryService';
-import { StockSymbolSchema, StockScreenerSchema, LocalPDFSchema, IRSummaryRequestSchema } from './types/schema';
+import { MarketEnvironmentService } from './services/marketEnvironmentService';
+import { StockSymbolSchema, StockScreenerSchema, LocalPDFSchema, IRSummaryRequestSchema, MarketEnvironmentRequestSchema } from './types/schema';
 
 const server = new Server(
   {
@@ -26,6 +27,7 @@ const server = new Server(
 const stockService = new StockService();
 const irService = new IRService();
 const irSummaryService = new IRSummaryService();
+const marketEnvironmentService = new MarketEnvironmentService();
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -227,6 +229,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['symbol', 'filePath', 'documentType', 'country'],
         },
       },
+      {
+        name: 'get_market_environment',
+        description: '現在の市場環境とマクロ経済指標を取得 (金利、ドル円、NYダウ、VIX等)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            region: {
+              type: 'string',
+              enum: ['US', 'JP', 'GLOBAL'],
+              description: '対象地域 (US: 米国中心、JP: 日本中心、GLOBAL: 世界)',
+            },
+            timeframe: {
+              type: 'string',
+              enum: ['1M', '3M', '1Y'],
+              description: '分析期間 (オプション)',
+            },
+          },
+          required: ['region'],
+        },
+      },
     ],
   };
 });
@@ -388,6 +410,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         validatedArgs.documentType,
         validatedArgs.country
       );
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'get_market_environment') {
+      const validatedArgs = MarketEnvironmentRequestSchema.parse(args);
+      const result = await marketEnvironmentService.getMarketEnvironment(validatedArgs);
       
       return {
         content: [
