@@ -197,6 +197,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               enum: ['earnings_presentation', 'annual_report', 'quarterly_report', '10-K', '10-Q'],
               description: 'Filter by specific document type (optional)',
             },
+            includeMarketEnvironment: {
+              type: 'boolean',
+              default: false,
+              description: 'Include market environment data in the summary',
+            },
+            marketRegion: {
+              type: 'string',
+              enum: ['US', 'JP', 'GLOBAL'],
+              default: 'US',
+              description: 'Market region for environment data',
+            },
           },
           required: ['symbol'],
         },

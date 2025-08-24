@@ -5,10 +5,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StockService = void 0;
 const yahoo_finance2_1 = __importDefault(require("yahoo-finance2"));
-const secService_js_1 = require("./secService.js");
+const secService_1 = require("./secService");
 class StockService {
     constructor() {
-        this.secService = new secService_js_1.SecService();
+        this.secService = new secService_1.SecService();
     }
     // 指定されたシンボルの株価情報を取得する
     async getStockPrice(input) {

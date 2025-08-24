@@ -581,10 +581,14 @@ export declare const IRSummaryRequestSchema: z.ZodObject<{
     language: z.ZodDefault<z.ZodEnum<["ja", "en"]>>;
     extractionMode: z.ZodDefault<z.ZodOptional<z.ZodEnum<["text", "layout", "ocr", "auto"]>>>;
     documentTypeFilter: z.ZodOptional<z.ZodEnum<["earnings_presentation", "annual_report", "quarterly_report", "10-K", "10-Q"]>>;
+    includeMarketEnvironment: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    marketRegion: z.ZodDefault<z.ZodOptional<z.ZodEnum<["US", "JP", "GLOBAL"]>>>;
 }, "strip", z.ZodTypeAny, {
     symbol: string;
     language: "ja" | "en";
     extractionMode: "text" | "layout" | "ocr" | "auto";
+    includeMarketEnvironment: boolean;
+    marketRegion: "US" | "JP" | "GLOBAL";
     companyName?: string | undefined;
     documentTypeFilter?: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q" | undefined;
 }, {
@@ -593,6 +597,8 @@ export declare const IRSummaryRequestSchema: z.ZodObject<{
     language?: "ja" | "en" | undefined;
     extractionMode?: "text" | "layout" | "ocr" | "auto" | undefined;
     documentTypeFilter?: "earnings_presentation" | "annual_report" | "quarterly_report" | "10-K" | "10-Q" | undefined;
+    includeMarketEnvironment?: boolean | undefined;
+    marketRegion?: "US" | "JP" | "GLOBAL" | undefined;
 }>;
 export declare const QuarterlyEarningSummarySchema: z.ZodObject<{
     executive: z.ZodString;

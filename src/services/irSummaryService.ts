@@ -1,14 +1,17 @@
 import { IRSummaryRequest, IRSummaryResponse } from '../types/schema';
 import { IRService } from './irService';
+import { MarketEnvironmentService } from './marketEnvironmentService';
 import * as fs from 'fs';
 import * as path from 'path';
 
 
 export class IRSummaryService {
   private irService: IRService;
+  private marketEnvironmentService: MarketEnvironmentService;
 
   constructor() {
     this.irService = new IRService();
+    this.marketEnvironmentService = new MarketEnvironmentService();
   }
 
   async generateIRSummary(request: IRSummaryRequest): Promise<IRSummaryResponse> {
@@ -23,7 +26,22 @@ export class IRSummaryService {
 
       console.log(`${documents.length}件のIR文書を収集しました`);
       
-      const summary = await this.analyzeAndSummarize(documents, request);
+      // 市場環境データを取得（オプション）
+      let marketEnvironmentData = null;
+      if (request.includeMarketEnvironment) {
+        console.log(`市場環境データを取得中... (地域: ${request.marketRegion})`);
+        try {
+          marketEnvironmentData = await this.marketEnvironmentService.getMarketEnvironment({
+            region: request.marketRegion || 'US'
+          });
+          console.log('市場環境データ取得完了');
+        } catch (error) {
+          console.warn('市場環境データ取得エラー:', error);
+          // 市場環境データの取得に失敗しても継続
+        }
+      }
+      
+      const summary = await this.analyzeAndSummarize(documents, request, marketEnvironmentData);
       const keyMetrics = this.extractKeyMetrics(documents);
       const processingInfo = this.generateProcessingInfo(documents);
       
@@ -102,7 +120,7 @@ export class IRSummaryService {
   }
 
 
-  private async analyzeAndSummarize(documents: Array<any>, request: IRSummaryRequest): Promise<any> {
+  private async analyzeAndSummarize(documents: Array<any>, request: IRSummaryRequest, marketEnvironmentData?: any): Promise<any> {
     console.log('IR文書分析・要約処理開始');
     
     let targetDocuments = documents;
@@ -132,13 +150,13 @@ export class IRSummaryService {
     console.log(`文書タイプ: ${documentType}`);
     
     // 3-5行の全体要約（executive）を生成
-    const executive = this.generateExecutiveSummary(combinedText, request.language);
+    const executive = this.generateExecutiveSummary(combinedText, request.language, marketEnvironmentData);
     console.log('全体要約生成完了');
     
     // 複数文書がある場合は統合要約を生成
     if (targetDocuments.length > 1) {
       console.log('複数文書統合要約を生成中...');
-      return this.generateIntegratedSummary(targetDocuments, combinedText, executive, request.language);
+      return this.generateIntegratedSummary(targetDocuments, combinedText, executive, request.language, marketEnvironmentData);
     }
     
     // 単一文書の場合は文書タイプに応じて要約構造を生成
@@ -154,13 +172,18 @@ export class IRSummaryService {
     }
   }
 
-  private generateExecutiveSummary(text: string, language: string = 'ja'): string {
+  private generateExecutiveSummary(text: string, language: string = 'ja', marketEnvironmentData?: any): string {
     // 実際の文書言語を判定
     const actualLanguage = this.detectLanguage(text);
     
     // 英語文書の場合は日本語で要約を生成
     if (actualLanguage === 'en') {
-      return this.generateJapaneseSummaryFromEnglishText(text);
+      let englishSummary = this.generateJapaneseSummaryFromEnglishText(text);
+      // 市場環境データが利用可能な場合は、コンテキスト情報を追加
+      if (marketEnvironmentData) {
+        englishSummary += this.generateMarketContextSummary(marketEnvironmentData);
+      }
+      return englishSummary;
     }
     
     // 日本語決算短信の場合の改善された要約生成
@@ -208,11 +231,25 @@ export class IRSummaryService {
       const companyMatch = text.match(/([^。\n]{5,30}?)(?:株式会社|ホールディングス)/);
       const company = companyMatch ? companyMatch[1] + (companyMatch[0].includes('ホールディングス') ? 'ホールディングス' : '株式会社') : '';
       
-      return `${company}の当四半期は、売上高${revenueCurrent.toLocaleString()}億円（前年同期比${revenueGrowthNum > 0 ? '+' : ''}${revenueGrowth}%）、営業利益${operatingCurrent.toLocaleString()}億円（同${operatingGrowthNum > 0 ? '+' : ''}${operatingGrowth}%）と${revenueGrowthNum > 0 && operatingGrowthNum > 0 ? '増収増益' : revenueGrowthNum > 0 ? '増収' : operatingGrowthNum > 0 ? '増益' : '減収減益'}を達成しました。`;
+      let summary = `${company}の当四半期は、売上高${revenueCurrent.toLocaleString()}億円（前年同期比${revenueGrowthNum > 0 ? '+' : ''}${revenueGrowth}%）、営業利益${operatingCurrent.toLocaleString()}億円（同${operatingGrowthNum > 0 ? '+' : ''}${operatingGrowth}%）と${revenueGrowthNum > 0 && operatingGrowthNum > 0 ? '増収増益' : revenueGrowthNum > 0 ? '増収' : operatingGrowthNum > 0 ? '増益' : '減収減益'}を達成しました。`;
+      
+      // 市場環境データが利用可能な場合は、コンテキスト情報を追加
+      if (marketEnvironmentData) {
+        summary += this.generateMarketContextSummary(marketEnvironmentData);
+      }
+      
+      return summary;
     }
     
     // フォールバック: 基本的な要約
-    return '当四半期の業績に関する詳細情報が含まれており、財務実績や事業の進捗状況について報告されています。';
+    let baseSummary = '当四半期の業績に関する詳細情報が含まれており、財務実績や事業の進捗状況について報告されています。';
+    
+    // 市場環境データが利用可能な場合は、コンテキスト情報を追加
+    if (marketEnvironmentData) {
+      baseSummary += this.generateMarketContextSummary(marketEnvironmentData);
+    }
+    
+    return baseSummary;
   }
 
   private generateJapaneseSummaryFromEnglishText(text: string): string {
@@ -466,12 +503,19 @@ export class IRSummaryService {
     };
   }
 
-  private generateIntegratedSummary(documents: Array<any>, combinedText: string, executive: string, language: string = 'ja'): any {
+  private generateIntegratedSummary(documents: Array<any>, combinedText: string, executive: string, language: string = 'ja', marketEnvironmentData?: any): any {
     console.log('複数文書統合要約生成開始');
     
     // 決算短信と有価証券報告書の両方の情報を統合
+    let finalExecutive = executive;
+    
+    // 市場環境データが利用可能な場合は、コンテキスト情報を追加
+    if (marketEnvironmentData) {
+      finalExecutive += this.generateMarketContextSummary(marketEnvironmentData);
+    }
+    
     const summary: any = {
-      executive,
+      executive: finalExecutive,
     };
     
     // 決算短信文書があるかチェック
@@ -2140,6 +2184,44 @@ ${JSON.stringify({
     }
     
     return translated || '詳細情報は原文を参照してください';
+  }
+
+  /**
+   * 市場環境データから要約に含めるコンテキスト情報を生成
+   */
+  private generateMarketContextSummary(marketEnvironmentData: any): string {
+    if (!marketEnvironmentData) return '';
+
+    const contextParts = [];
+
+    // 市場トレンド情報
+    if (marketEnvironmentData.investment_climate?.market_trend_analysis) {
+      contextParts.push(`市場環境では、${marketEnvironmentData.investment_climate.market_trend_analysis}`);
+    }
+
+    // 金利動向
+    if (marketEnvironmentData.interest_rates?.current_rate && marketEnvironmentData.interest_rates?.trend) {
+      const rateStr = marketEnvironmentData.interest_rates.current_rate.toFixed(2);
+      const trendStr = marketEnvironmentData.interest_rates.trend === 'falling' ? '低下傾向' : 
+                      marketEnvironmentData.interest_rates.trend === 'rising' ? '上昇傾向' : '安定';
+      contextParts.push(`米金利は${rateStr}%で${trendStr}`);
+    }
+
+    // 為替情報
+    if (marketEnvironmentData.investment_climate?.fx_impact_analysis) {
+      contextParts.push(marketEnvironmentData.investment_climate.fx_impact_analysis);
+    }
+
+    // 投資判断
+    if (marketEnvironmentData.investment_climate?.overall_rating) {
+      const ratingStr = marketEnvironmentData.investment_climate.overall_rating === 'bullish' ? '強気相場' :
+                       marketEnvironmentData.investment_climate.overall_rating === 'bearish' ? '弱気相場' : '中性';
+      contextParts.push(`投資環境は${ratingStr}と評価されています`);
+    }
+
+    if (contextParts.length === 0) return '';
+
+    return ` 市場コンテキストとして、${contextParts.join('。')}。`;
   }
 
 }

@@ -1,4 +1,4 @@
-import { StockPriceResponse, StockSymbolInput, FinancialDataResponse, ProfitabilityTurnAroundResponse, StockScreenerInput, QuarterlyEarningsForecastResponse, AnnualEarningsForecastResponse, EarningsGuidanceResponse } from '../types/schema.js';
+import { StockPriceResponse, StockSymbolInput, FinancialDataResponse, ProfitabilityTurnAroundResponse, StockScreenerInput, QuarterlyEarningsForecastResponse, AnnualEarningsForecastResponse, EarningsGuidanceResponse } from '../types/schema';
 export declare class StockService {
     private secService;
     constructor();
